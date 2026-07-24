@@ -1,0 +1,41 @@
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+LINKEDIN_CLIENT_ID: str = ""
+LINKEDIN_CLIENT_SECRET: str = ""
+
+LINKEDIN_REDIRECT_URI: str = (
+    "http://localhost:8000/api/v1/auth/linkedin/callback"
+)
+
+LINKEDIN_VERSION: str = "202603"
+class Settings(BaseSettings):
+    APP_NAME: str = "Social Media AI Agent"
+    APP_ENV: str = "development"
+    DEBUG: bool = True
+
+    API_V1_PREFIX: str = "/api/v1"
+
+    DATABASE_URL: str = (
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/social_agent"
+    )
+
+    GEMINI_API_KEY: str
+    GEMINI_MODEL: str = "gemini-3.6-flash"
+    REDIS_URL: str = "redis://localhost:6379/0"
+    DEFAULT_TIMEZONE: str = "Asia/Kolkata"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore",
+    )
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()

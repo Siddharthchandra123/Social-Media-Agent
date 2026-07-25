@@ -19,6 +19,7 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = "redis://localhost:6379/0"
     DEFAULT_TIMEZONE: str = "Asia/Kolkata"
+    CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,http://0.0.0.0:3000"
 
     # LinkedIn OAuth
     LINKEDIN_CLIENT_ID: str = ""

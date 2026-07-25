@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000/api/v1";
+  process.env.NEXT_PUBLIC_API_URL ?? "/api/proxy";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -412,4 +412,4 @@ export async function fetchOptimalTimes(platform: string): Promise<SchedulingRec
       ]
     };
   }
-}
+}

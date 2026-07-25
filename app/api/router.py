@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.routes import (
+    auth,
     content,
     health,
     posts,
@@ -36,4 +37,11 @@ api_router.include_router(
     scheduling.router,
     prefix="/scheduling",
     tags=["Scheduling"],
+)
+
+
+api_router.include_router(
+    auth.router,
+    prefix="/auth",
+    tags=["Authentication"],
 )

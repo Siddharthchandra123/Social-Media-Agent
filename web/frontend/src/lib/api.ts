@@ -16,7 +16,7 @@ export const api = axios.create({
   },
 
   // Gemini generation can take longer than 15 seconds.
-  timeout: 60000,
+  timeout: 1500000,
 });
 
 

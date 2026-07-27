@@ -2,7 +2,12 @@ import uuid
 from datetime import datetime, timezone
 
 from datetime import datetime, timezone
+from datetime import datetime, timezone
 
+from sqlalchemy import select
+
+from app.db.models.social_account import SocialAccount
+from app.publishing.linkedin import LinkedInPublisher
 from app.publishing.linkedin import LinkedInPublisher
 from app.config import settings
 from sqlalchemy import select
@@ -194,7 +199,8 @@ class PostService:
     async def publish_now(
     self,
     post_id: uuid.UUID,
-):
+) -> Post:
+
         post = await self.get_post(post_id)
 
         if post.status != "approved":
@@ -204,13 +210,45 @@ class PostService:
 
         if post.platform != "linkedin":
             raise InvalidPostStateError(
-                f"Publishing for '{post.platform}' "
+                f"Publishing for {post.platform} "
                 "is not implemented yet"
             )
 
+        # Find connected LinkedIn account
+        result = await self.db.execute(
+            select(SocialAccount).where(
+                SocialAccount.platform == "linkedin",
+                SocialAccount.status == "active",
+            )
+        )
+
+        social_account = (
+            result.scalars().first()
+        )
+
+        if not social_account:
+            raise InvalidPostStateError(
+                "No active LinkedIn account connected. "
+                "Connect LinkedIn first."
+            )
+
+        if not social_account.access_token:
+            raise InvalidPostStateError(
+                "Connected LinkedIn account has "
+                "no access token."
+            )
+
+        if not social_account.platform_user_id:
+            raise InvalidPostStateError(
+                "Connected LinkedIn account has "
+                "no LinkedIn member ID."
+            )
+
         publisher = LinkedInPublisher(
-            access_token=settings.LINKEDIN_ACCESS_TOKEN,
-            platform_user_id=settings.LINKEDIN_PLATFORM_USER_ID,
+            access_token=social_account.access_token,
+            platform_user_id=(
+                social_account.platform_user_id
+            ),
         )
 
         post.status = "publishing"
@@ -219,15 +257,22 @@ class PostService:
         await self.db.refresh(post)
 
         try:
-            result = await publisher.publish(post)
-
-            post.status = "published"
-            post.published_at = datetime.now(
-                timezone.utc
+            publish_result = await publisher.publish(
+                post
             )
 
+            post.status = "published"
+
             post.external_post_id = (
-                result.external_post_id
+                publish_result.external_post_id
+            )
+
+            post.external_url = (
+                publish_result.external_url
+            )
+
+            post.published_at = datetime.now(
+                timezone.utc
             )
 
             post.failure_reason = None

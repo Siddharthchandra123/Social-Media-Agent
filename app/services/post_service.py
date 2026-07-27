@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models.candidate import ContentCandidate
 from app.db.models.generation import ContentGeneration
 from app.db.models.post import Post
-from app.workers.dispatcher import TaskDispatcher
 
 
 class PostNotFoundError(Exception):
@@ -185,11 +184,5 @@ class PostService:
 
         await self.db.commit()
         await self.db.refresh(post)
-
-        # Dispatch only after the post has been scheduled.
-        TaskDispatcher.schedule_publish(
-            post_id=str(post.id),
-            scheduled_at=post.scheduled_at,
-        )
 
         return post

@@ -60,28 +60,37 @@ class LinkedInPublisher(SocialPublisher):
             "Linkedin-Version": settings.LINKEDIN_VERSION,
         }
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://api.linkedin.com/rest/posts",
-                headers=headers,
-                json=payload,
-            )
+        try:
+            async with httpx.AsyncClient(
+                timeout=30.0
+            ) as client:
+
+                response = await client.post(
+                    "https://api.linkedin.com/rest/posts",
+                    headers=headers,
+                    json=payload,
+                )
+
+        except httpx.HTTPError as exc:
+            raise RuntimeError(
+                f"Could not connect to LinkedIn: {exc}"
+            ) from exc
 
         if response.status_code != 201:
             raise RuntimeError(
                 "LinkedIn publishing failed: "
-                f"{response.status_code} "
+                f"HTTP {response.status_code}: "
                 f"{response.text}"
             )
 
-        external_post_id = response.headers.get(
-            "x-restli-id"
+        external_post_id = (
+            response.headers.get("x-restli-id")
         )
 
         if not external_post_id:
             raise RuntimeError(
-                "LinkedIn created the post but "
-                "did not return a post ID"
+                "LinkedIn returned HTTP 201 but "
+                "no x-restli-id header."
             )
 
         external_url = (

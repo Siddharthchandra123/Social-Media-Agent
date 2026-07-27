@@ -70,15 +70,36 @@ export default function PostPipelinePage() {
   };
 
   const handlePublishNow = async (postId: string) => {
-    try {
-      await publishPostNow(postId);
-      setActionMessage("Post queued for instant publishing!");
-      await loadPostsData();
-      setTimeout(() => setActionMessage(null), 3000);
-    } catch (err) {
-      console.error(err);
+  try {
+    await publishPostNow(postId);
+
+    setActionMessage("Publishing post...");
+
+    // Poll until Celery finishes publishing.
+    for (let i = 0; i < 10; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const data = await fetchPosts();
+      setPosts(data);
+
+      const updatedPost = data.find((p) => p.id === postId);
+
+      if (updatedPost?.status === "published") {
+        setActionMessage("Post successfully published!");
+        break;
+      }
+
+      if (updatedPost?.status === "failed") {
+        setActionMessage("Post publishing failed.");
+        break;
+      }
     }
-  };
+
+    setTimeout(() => setActionMessage(null), 3000);
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const handleScheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

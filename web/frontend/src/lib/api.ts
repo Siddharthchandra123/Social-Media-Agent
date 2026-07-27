@@ -245,7 +245,7 @@ export async function fetchGenerations(
 
     const response =
       await api.get<GenerationResponse[]>(
-        "api/v1/content/generations",
+        "/content/generations",
         {
           params: {
             limit,

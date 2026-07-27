@@ -25,10 +25,12 @@ class Settings(BaseSettings):
     LINKEDIN_CLIENT_ID: str = ""
     LINKEDIN_CLIENT_SECRET: str = ""
     LINKEDIN_REDIRECT_URI: str = (
-        "http://localhost:8000/api/v1/auth/linkedin/callback"
+        "https://social-media-agent-backend-yn86.onrender.com/api/v1/auth/linkedin/callback"
     )
     LINKEDIN_VERSION: str = "202603"
-    
+    LINKEDIN_ACCESS_TOKEN: str
+    LINKEDIN_PLATFORM_USER_ID: str
+    LINKEDIN_VERSION: str = "202506"
 
     model_config = SettingsConfigDict(
         env_file=".env",

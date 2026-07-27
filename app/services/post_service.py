@@ -1,6 +1,10 @@
 import uuid
 from datetime import datetime, timezone
 
+from datetime import datetime, timezone
+
+from app.publishing.linkedin import LinkedInPublisher
+from app.config import settings
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -184,5 +188,61 @@ class PostService:
 
         await self.db.commit()
         await self.db.refresh(post)
-
+        
         return post
+    
+    async def publish_now(
+    self,
+    post_id: uuid.UUID,
+):
+        post = await self.get_post(post_id)
+
+        if post.status != "approved":
+            raise InvalidPostStateError(
+                "Post must be approved before publishing"
+            )
+
+        if post.platform != "linkedin":
+            raise InvalidPostStateError(
+                f"Publishing for '{post.platform}' "
+                "is not implemented yet"
+            )
+
+        publisher = LinkedInPublisher(
+            access_token=settings.LINKEDIN_ACCESS_TOKEN,
+            platform_user_id=settings.LINKEDIN_PLATFORM_USER_ID,
+        )
+
+        post.status = "publishing"
+
+        await self.db.commit()
+        await self.db.refresh(post)
+
+        try:
+            result = await publisher.publish(post)
+
+            post.status = "published"
+            post.published_at = datetime.now(
+                timezone.utc
+            )
+
+            post.external_post_id = (
+                result.external_post_id
+            )
+
+            post.failure_reason = None
+
+            await self.db.commit()
+            await self.db.refresh(post)
+
+            return post
+
+        except Exception as exc:
+
+            post.status = "failed"
+            post.failure_reason = str(exc)
+
+            await self.db.commit()
+            await self.db.refresh(post)
+
+            raise

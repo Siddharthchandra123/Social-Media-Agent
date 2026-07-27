@@ -9,6 +9,7 @@ from app.db.models.generation import ContentGeneration
 from app.db.models.post import Post
 from app.workers.dispatcher import TaskDispatcher
 
+
 class PostNotFoundError(Exception):
     pass
 
@@ -26,14 +27,17 @@ class PostService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
+    # ---------------------------------------------------------
+    # CREATE POST FROM AI CANDIDATE
+    # ---------------------------------------------------------
+
     async def create_from_candidate(
-    self,
-    candidate_id: uuid.UUID,
-) -> Post:
+        self,
+        candidate_id: uuid.UUID,
+    ) -> Post:
 
         result = await self.db.execute(
-            select(ContentCandidate)
-            .where(
+            select(ContentCandidate).where(
                 ContentCandidate.id == candidate_id
             )
         )
@@ -46,8 +50,7 @@ class PostService:
             )
 
         generation_result = await self.db.execute(
-            select(ContentGeneration)
-            .where(
+            select(ContentGeneration).where(
                 ContentGeneration.id
                 == candidate.generation_id
             )
@@ -77,7 +80,34 @@ class PostService:
         await self.db.commit()
         await self.db.refresh(post)
 
+        # IMPORTANT:
+        # Do NOT dispatch to Celery here.
+        # This post is only a draft.
+
         return post
+
+    # ---------------------------------------------------------
+    # LIST POSTS
+    # ---------------------------------------------------------
+
+    async def list_posts(
+        self,
+        limit: int = 100,
+    ) -> list[Post]:
+
+        result = await self.db.execute(
+            select(Post)
+            .order_by(Post.created_at.desc())
+            .limit(limit)
+        )
+
+        return list(
+            result.scalars().all()
+        )
+
+    # ---------------------------------------------------------
+    # GET POST
+    # ---------------------------------------------------------
 
     async def get_post(
         self,
@@ -85,8 +115,9 @@ class PostService:
     ) -> Post:
 
         result = await self.db.execute(
-            select(Post)
-            .where(Post.id == post_id)
+            select(Post).where(
+                Post.id == post_id
+            )
         )
 
         post = result.scalar_one_or_none()
@@ -97,6 +128,10 @@ class PostService:
             )
 
         return post
+
+    # ---------------------------------------------------------
+    # APPROVE POST
+    # ---------------------------------------------------------
 
     async def approve(
         self,
@@ -117,6 +152,10 @@ class PostService:
         await self.db.refresh(post)
 
         return post
+
+    # ---------------------------------------------------------
+    # SCHEDULE POST
+    # ---------------------------------------------------------
 
     async def schedule(
         self,
@@ -147,24 +186,10 @@ class PostService:
         await self.db.commit()
         await self.db.refresh(post)
 
+        # Dispatch only after the post has been scheduled.
         TaskDispatcher.schedule_publish(
             post_id=str(post.id),
             scheduled_at=post.scheduled_at,
         )
 
         return post
-
-async def list_posts(
-    self,
-    limit: int = 100,
-) -> list[Post]:
-
-    result = await self.db.execute(
-        select(Post)
-        .order_by(Post.created_at.desc())
-        .limit(limit)
-    )
-
-    return list(
-        result.scalars().all()
-    )

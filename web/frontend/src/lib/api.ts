@@ -418,12 +418,10 @@ export async function publishPostNow(
 export async function fetchOptimalTimes(
   platform: string
 ): Promise<SchedulingRecommendationResponse> {
-
   try {
-
     const response =
       await api.get<SchedulingRecommendationResponse>(
-        "/scheduling/optimal-times",
+        "/scheduling/recommendations",
         {
           params: {
             platform,
@@ -432,9 +430,7 @@ export async function fetchOptimalTimes(
       );
 
     return response.data;
-
   } catch (error) {
-
     return handleApiError(error);
   }
 }

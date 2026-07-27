@@ -316,22 +316,18 @@ Promise<PostResponse[]> {
 export async function createPostFromCandidate(
   candidateId: string
 ): Promise<PostResponse> {
-
   try {
-
-    const response =
-      await api.post<PostResponse>(
-        "/posts",
-        {
-          candidate_id: candidateId,
-        }
-      );
+    const response = await api.post<PostResponse>(
+      "/posts",
+      {
+        candidate_id: candidateId,
+      }
+    );
 
     return response.data;
-
   } catch (error) {
-
-    return handleApiError(error);
+    console.error("Create post failed:", error);
+    throw error;
   }
 }
 

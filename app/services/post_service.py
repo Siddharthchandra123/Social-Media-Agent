@@ -27,13 +27,15 @@ class PostService:
         self.db = db
 
     async def create_from_candidate(
-        self,
-        candidate_id: uuid.UUID,
-    ) -> Post:
+    self,
+    candidate_id: uuid.UUID,
+) -> Post:
 
         result = await self.db.execute(
             select(ContentCandidate)
-            .where(ContentCandidate.id == candidate_id)
+            .where(
+                ContentCandidate.id == candidate_id
+            )
         )
 
         candidate = result.scalar_one_or_none()
@@ -74,11 +76,6 @@ class PostService:
 
         await self.db.commit()
         await self.db.refresh(post)
-
-        TaskDispatcher.schedule_publish(
-            post_id=str(post.id),
-            scheduled_at=post.scheduled_at,
-        )
 
         return post
 
@@ -150,4 +147,24 @@ class PostService:
         await self.db.commit()
         await self.db.refresh(post)
 
+        TaskDispatcher.schedule_publish(
+            post_id=str(post.id),
+            scheduled_at=post.scheduled_at,
+        )
+
         return post
+
+async def list_posts(
+    self,
+    limit: int = 100,
+) -> list[Post]:
+
+    result = await self.db.execute(
+        select(Post)
+        .order_by(Post.created_at.desc())
+        .limit(limit)
+    )
+
+    return list(
+        result.scalars().all()
+    )

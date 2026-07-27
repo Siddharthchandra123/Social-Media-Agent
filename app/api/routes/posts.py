@@ -42,7 +42,16 @@ async def create_post(
             detail=str(exc),
         ) from exc
 
-
+@router.get(
+    "",
+    response_model=list[PostResponse],
+)
+async def list_posts(
+    service: PostService = Depends(
+        get_post_service
+    ),
+):
+    return await service.list_posts()
 @router.get(
     "/{post_id}",
     response_model=PostResponse,

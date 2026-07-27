@@ -98,7 +98,7 @@ function CreateContentStudioForm() {
       setCreationSuccess(true);
       setTimeout(() => {
         router.push("/posts");
-      }, 120000);
+      }, 1200);
     } catch (err) {
       console.error("Post creation error:", err);
     } finally {

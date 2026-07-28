@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     LINKEDIN_CLIENT_ID: str = ""
     LINKEDIN_CLIENT_SECRET: str = ""
     LINKEDIN_REDIRECT_URI: str = (
-        "https://social-media-agent-backend-yn86.onrender.com/api/v1/auth/linkedin/callback"
+        "https://social-media-agent-uud2.onrender.com/api/v1/auth/linkedin/callback"
     )
     LINKEDIN_VERSION: str = "202603"
 

@@ -251,3 +251,10 @@ async def linkedin_callback(
     response.delete_cookie("linkedin_oauth_state")
 
     return response
+
+@router.get("/debug-config")
+async def debug_config():
+    return {
+        "client_id": settings.LINKEDIN_CLIENT_ID,
+        "redirect_uri": settings.LINKEDIN_REDIRECT_URI,
+    }

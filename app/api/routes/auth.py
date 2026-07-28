@@ -32,6 +32,8 @@ async def linkedin_login():
         "scope": "openid profile w_member_social",
     }
 
+    print("AUTH PARAMS:", params)   # <-- ADD HERE
+
     authorization_url = (
         "https://www.linkedin.com/oauth/v2/authorization?"
         + urlencode(params)
@@ -106,6 +108,12 @@ async def linkedin_callback(
         "client_secret": settings.LINKEDIN_CLIENT_SECRET,
         "redirect_uri": settings.LINKEDIN_REDIRECT_URI,
     }
+
+    print("TOKEN DATA:", {
+        "grant_type": token_data["grant_type"],
+        "client_id": token_data["client_id"],
+        "redirect_uri": token_data["redirect_uri"],
+    })  # <-- ADD HERE (don't print the secret)
 
     async with httpx.AsyncClient() as client:
         token_response = await client.post(

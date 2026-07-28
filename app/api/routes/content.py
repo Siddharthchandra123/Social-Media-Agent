@@ -9,6 +9,8 @@ from fastapi import (
 )
 
 from app.dependencies import get_content_service
+from app.auth.dependencies import get_current_user
+from app.db.models.user import User
 from app.schemas.content import (
     ContentGenerationRequest,
     GenerationResponse,
@@ -31,12 +33,16 @@ router = APIRouter()
 )
 async def generate_content(
     request: ContentGenerationRequest,
+    current_user: User = Depends(get_current_user),
     service: ContentService = Depends(
         get_content_service
     ),
 ):
     try:
-        return await service.generate_content(request)
+        return await service.generate_content(
+            request,
+            current_user.id,
+        )
 
     except Exception as exc:
 
@@ -58,6 +64,7 @@ async def generate_content(
 )
 async def get_generation(
     generation_id: UUID,
+    current_user: User = Depends(get_current_user),
     service: ContentService = Depends(
         get_content_service
     ),
@@ -65,7 +72,8 @@ async def get_generation(
 
     try:
         return await service.get_generation(
-            generation_id
+            generation_id,
+            current_user.id,
         )
 
     except GenerationNotFoundError as exc:
@@ -84,14 +92,14 @@ async def get_generation(
     response_model=list[GenerationResponse],
 )
 async def list_generations(
-    limit: int = Query(
-        default=20,
-        ge=1,
-        le=100,
-    ),
+    limit: int = Query(...),
+    current_user: User = Depends(get_current_user),
     service: ContentService = Depends(
         get_content_service
     ),
 ):
 
-    return await service.list_generations(limit)
+    return await service.list_generations(
+        current_user.id,
+        limit,
+    )

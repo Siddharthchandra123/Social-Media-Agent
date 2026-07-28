@@ -20,6 +20,47 @@ export const api = axios.create({
 });
 
 
+api.interceptors.request.use((config) => {
+  const token = getAccessToken();
+
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
+});
+
+
+api.interceptors.response.use(
+  (response) => response,
+
+  (error) => {
+    if (error.response?.status === 401) {
+      removeAccessToken();
+
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export function getAccessToken() {
+  if (typeof window === "undefined") return null;
+
+  return localStorage.getItem("access_token");
+}
+
+export function setAccessToken(token: string) {
+  localStorage.setItem("access_token", token);
+}
+
+export function removeAccessToken() {
+  localStorage.removeItem("access_token");
+}
+
 /* =========================================================
    TYPES
 ========================================================= */

@@ -14,7 +14,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.social_account import SocialAccount
+from app.db.models.user import User
 from app.db.session import get_db
+from app.auth.jwt import create_access_token
 router = APIRouter()
 
 
@@ -152,11 +154,18 @@ async def linkedin_callback(
 
     platform_user_id = user.get("sub")
     display_name = user.get("name")
+    email = user.get("email")
 
     if not platform_user_id:
         raise HTTPException(
             status_code=400,
             detail="LinkedIn did not return a member ID",
+        )
+
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail="LinkedIn did not return an email address",
         )
 
     token_expires_at = None
@@ -166,6 +175,22 @@ async def linkedin_callback(
             datetime.now(timezone.utc)
             + timedelta(seconds=int(expires_in))
         )
+
+    user_result = await db.execute(
+        select(User).where(User.email == email)
+    )
+
+    app_user = user_result.scalar_one_or_none()
+
+    if app_user is None:
+        app_user = User(
+            email=email,
+            name=display_name,
+        )
+        db.add(app_user)
+        await db.flush()
+    else:
+        app_user.name = display_name
 
     result = await db.execute(
         select(SocialAccount).where(
@@ -181,11 +206,13 @@ async def linkedin_callback(
         social_account.display_name = display_name
         social_account.access_token = access_token
         social_account.token_expires_at = token_expires_at
+        social_account.user_id = app_user.id
         social_account.status = "active"
 
     else:
         # First time connecting this LinkedIn account
         social_account = SocialAccount(
+            user_id=app_user.id,
             platform="linkedin",
             platform_user_id=platform_user_id,
             display_name=display_name,
@@ -199,14 +226,19 @@ async def linkedin_callback(
     await db.commit()
     await db.refresh(social_account)
 
-    response = JSONResponse(
-        content={
-            "message": "LinkedIn connected successfully",
-            "account_id": str(social_account.id),
-            "display_name": social_account.display_name,
-            "expires_in": expires_in,
+    jwt_token = create_access_token(app_user.id)
+
+    params = urlencode(
+        {
+            "token": jwt_token,
         }
     )
+
+    frontend_redirect = (
+        f"{settings.FRONTEND_URL}/auth/callback?{params}"
+    )
+
+    response = RedirectResponse(frontend_redirect)
 
     response.delete_cookie("linkedin_oauth_state")
 

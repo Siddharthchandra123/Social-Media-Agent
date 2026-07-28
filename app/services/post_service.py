@@ -42,6 +42,7 @@ class PostService:
     async def create_from_candidate(
         self,
         candidate_id: uuid.UUID,
+        user_id: uuid.UUID,
     ) -> Post:
 
         result = await self.db.execute(
@@ -74,6 +75,7 @@ class PostService:
             )
 
         post = Post(
+            user_id=user_id,
             candidate_id=candidate.id,
             platform=generation.platform,
             hook=candidate.hook,
@@ -100,11 +102,13 @@ class PostService:
 
     async def list_posts(
         self,
+        user_id: uuid.UUID,
         limit: int = 100,
     ) -> list[Post]:
 
         result = await self.db.execute(
             select(Post)
+            .where(Post.user_id == user_id)
             .order_by(Post.created_at.desc())
             .limit(limit)
         )
@@ -120,11 +124,13 @@ class PostService:
     async def get_post(
         self,
         post_id: uuid.UUID,
+        user_id: uuid.UUID,
     ) -> Post:
 
         result = await self.db.execute(
             select(Post).where(
-                Post.id == post_id
+                Post.id == post_id,
+                Post.user_id == user_id,
             )
         )
 
@@ -144,9 +150,13 @@ class PostService:
     async def approve(
         self,
         post_id: uuid.UUID,
+        user_id: uuid.UUID,
     ) -> Post:
 
-        post = await self.get_post(post_id)
+        post = await self.get_post(
+            post_id,
+            user_id,
+        )
 
         if post.status != "draft":
             raise InvalidPostStateError(
@@ -169,9 +179,13 @@ class PostService:
         self,
         post_id: uuid.UUID,
         scheduled_at: datetime,
+        user_id: uuid.UUID,
     ) -> Post:
 
-        post = await self.get_post(post_id)
+        post = await self.get_post(
+            post_id,
+            user_id,
+        )
 
         if post.status != "approved":
             raise InvalidPostStateError(
@@ -197,11 +211,15 @@ class PostService:
         return post
     
     async def publish_now(
-    self,
-    post_id: uuid.UUID,
-) -> Post:
-
-        post = await self.get_post(post_id)
+        self,
+        post_id: uuid.UUID,
+        user_id: uuid.UUID,
+    ) -> Post:
+        
+        post = await self.get_post(
+            post_id,
+            user_id,
+        )
 
         if post.status != "approved":
             raise InvalidPostStateError(
@@ -217,6 +235,7 @@ class PostService:
         # Find connected LinkedIn account
         result = await self.db.execute(
             select(SocialAccount).where(
+                SocialAccount.user_id == user_id,
                 SocialAccount.platform == "linkedin",
                 SocialAccount.status == "active",
             )

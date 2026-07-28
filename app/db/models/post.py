@@ -17,6 +17,13 @@ class Post(Base):
         default=uuid.uuid4,
     )
 
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True,
+    )
+
     candidate_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("content_candidates.id"),

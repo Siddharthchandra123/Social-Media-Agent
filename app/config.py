@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = (
         "postgresql+asyncpg://postgres:postgres@localhost:5432/social_agent"
     )
+    FRONTEND_URL: str
 
     GEMINI_API_KEY: str
     GEMINI_MODEL: str = "gemini-3.6-flash"
@@ -28,6 +29,10 @@ class Settings(BaseSettings):
         "https://social-media-agent-backend-yn86.onrender.com/api/v1/auth/linkedin/callback"
     )
     LINKEDIN_VERSION: str = "202603"
+
+    JWT_SECRET_KEY: str
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
 
     model_config = SettingsConfigDict(
         env_file=".env",

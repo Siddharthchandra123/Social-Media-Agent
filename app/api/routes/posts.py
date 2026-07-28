@@ -3,6 +3,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.dependencies import get_post_service
+from app.auth.dependencies import get_current_user
+from app.db.models.user import User
 from app.schemas.post import (
     CreatePostRequest,
     PostResponse,
@@ -26,13 +28,13 @@ router = APIRouter()
 )
 async def create_post(
     request: CreatePostRequest,
-    service: PostService = Depends(
-        get_post_service
-    ),
+    current_user: User = Depends(get_current_user),
+    service: PostService = Depends(get_post_service),
 ):
     try:
         return await service.create_from_candidate(
-            request.candidate_id
+            request.candidate_id,
+            current_user.id,
         )
 
     except CandidateNotFoundError as exc:
@@ -46,23 +48,28 @@ async def create_post(
     response_model=list[PostResponse],
 )
 async def list_posts(
-    service: PostService = Depends(
-        get_post_service
-    ),
+    current_user: User = Depends(get_current_user),
+    service: PostService = Depends(get_post_service),
 ):
-    return await service.list_posts()
+    
+    return await service.list_posts(
+        current_user.id
+    )
+
 @router.get(
     "/{post_id}",
     response_model=PostResponse,
 )
 async def get_post(
     post_id: UUID,
-    service: PostService = Depends(
-        get_post_service
-    ),
+    current_user: User = Depends(get_current_user),
+    service: PostService = Depends(get_post_service),
 ):
     try:
-        return await service.get_post(post_id)
+        return await service.get_post(
+            post_id,
+            current_user.id,
+        )
 
     except PostNotFoundError as exc:
         raise HTTPException(
@@ -77,12 +84,14 @@ async def get_post(
 )
 async def approve_post(
     post_id: UUID,
-    service: PostService = Depends(
-        get_post_service
-    ),
+    current_user: User = Depends(get_current_user),
+    service: PostService = Depends(get_post_service),
 ):
     try:
-        return await service.approve(post_id)
+        return await service.approve(
+            post_id,
+            current_user.id,
+        )
 
     except (
         PostNotFoundError,
@@ -100,10 +109,14 @@ async def approve_post(
 )
 async def publish_post_now(
     post_id: UUID,
+    current_user: User = Depends(get_current_user),
     service: PostService = Depends(get_post_service),
 ):
     try:
-        return await service.publish_now(post_id)
+        return await service.publish_now(
+            post_id,
+            current_user.id,
+        )
 
     except PostNotFoundError as exc:
         raise HTTPException(
@@ -129,14 +142,14 @@ async def publish_post_now(
 async def schedule_post(
     post_id: UUID,
     request: SchedulePostRequest,
-    service: PostService = Depends(
-        get_post_service
-    ),
+    current_user: User = Depends(get_current_user),
+    service: PostService = Depends(get_post_service),
 ):
     try:
         return await service.schedule(
             post_id,
             request.scheduled_at,
+            current_user.id,
         )
 
     except PostNotFoundError as exc:

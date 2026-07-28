@@ -27,9 +27,11 @@ class ContentService:
     async def generate_content(
         self,
         request: ContentGenerationRequest,
-    ) -> ContentGeneration:
+        user_id: uuid.UUID,
+    ):
 
         generation = ContentGeneration(
+            user_id=user_id,
             platform=request.platform.value,
             topic=request.topic,
             objective=request.objective,
@@ -121,23 +123,24 @@ class ContentService:
             raise
 
         return await self.get_generation(
-            generation.id
+            generation.id,
+            user_id,
         )
 
     async def get_generation(
         self,
         generation_id: uuid.UUID,
+        user_id: uuid.UUID,
     ) -> ContentGeneration:
 
         statement = (
             select(ContentGeneration)
             .options(
-                selectinload(
-                    ContentGeneration.candidates
-                )
+                selectinload(ContentGeneration.candidates)
             )
             .where(
-                ContentGeneration.id == generation_id
+                ContentGeneration.id == generation_id,
+                ContentGeneration.user_id == user_id,
             )
         )
 
@@ -158,11 +161,13 @@ class ContentService:
 
     async def list_generations(
         self,
+        user_id: uuid.UUID,
         limit: int = 20,
-    ) -> list[ContentGeneration]:
+    ):
 
         statement = (
             select(ContentGeneration)
+            .where(ContentGeneration.user_id == user_id)
             .options(
                 selectinload(
                     ContentGeneration.candidates

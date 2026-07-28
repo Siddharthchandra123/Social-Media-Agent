@@ -29,7 +29,7 @@ async def linkedin_login():
         "client_id": settings.LINKEDIN_CLIENT_ID,
         "redirect_uri": settings.LINKEDIN_REDIRECT_URI,
         "state": state,
-        "scope": "openid profile w_member_social",
+        "scope": "openid email profile w_member_social",
     }
 
     print("AUTH PARAMS:", params)   # <-- ADD HERE

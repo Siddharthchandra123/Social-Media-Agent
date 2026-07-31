@@ -258,3 +258,220 @@ async def debug_config():
         "client_id": settings.LINKEDIN_CLIENT_ID,
         "redirect_uri": settings.LINKEDIN_REDIRECT_URI,
     }
+
+@router.get("/facebook")
+async def facebook_login():
+    state = secrets.token_urlsafe(32)
+
+    params = {
+        "client_id": settings.FACEBOOK_CLIENT_ID,
+        "redirect_uri": settings.FACEBOOK_REDIRECT_URI,
+        "state": state,
+        "scope": "email,pages_show_list,pages_read_engagement",
+    }
+
+    authorization_url = (
+        "https://www.facebook.com/v23.0/dialog/oauth?"
+        + urlencode(params)
+    )
+
+    response = RedirectResponse(url=authorization_url)
+
+    response.set_cookie(
+        key="facebook_oauth_state",
+        value=state,
+        httponly=True,
+        max_age=600,
+        samesite="lax",
+    )
+
+    return response
+
+@router.get("/facebook/callback")
+async def facebook_callback(
+    request: Request,
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+    error_description: str | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    if error:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": error,
+                "description": error_description,
+            },
+        )
+
+    saved_state = request.cookies.get(
+        "facebook_oauth_state"
+    )
+
+    if not state or not saved_state:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing OAuth state",
+        )
+
+    if not secrets.compare_digest(
+        state,
+        saved_state,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid OAuth state",
+        )
+
+    if not code:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing authorization code",
+        )
+
+    token_url = (
+        "https://graph.facebook.com/v23.0/oauth/access_token"
+    )
+
+    token_params = {
+        "client_id": settings.FACEBOOK_CLIENT_ID,
+        "client_secret": settings.FACEBOOK_CLIENT_SECRET,
+        "redirect_uri": settings.FACEBOOK_REDIRECT_URI,
+        "code": code,
+    }
+
+    async with httpx.AsyncClient() as client:
+        token_response = await client.get(
+            token_url,
+            params=token_params,
+        )
+
+    if token_response.status_code != 200:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Facebook token exchange failed",
+                "facebook_response": token_response.text,
+            },
+        )
+
+    token = token_response.json()
+
+    access_token = token.get("access_token")
+    expires_in = token.get("expires_in")
+
+    if not access_token:
+        raise HTTPException(
+            status_code=400,
+            detail="Facebook did not return an access token",
+        )
+
+    async with httpx.AsyncClient() as client:
+        user_response = await client.get(
+            "https://graph.facebook.com/me",
+            params={
+                "fields": "id,name,email",
+                "access_token": access_token,
+            },
+        )
+
+    if user_response.status_code != 200:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Failed to retrieve Facebook user",
+                "facebook_response": user_response.text,
+            },
+        )
+
+    user = user_response.json()
+
+    platform_user_id = user.get("id")
+    display_name = user.get("name")
+    email = user.get("email")
+
+    if not platform_user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Facebook did not return a user ID",
+        )
+
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail="Facebook did not return an email address",
+        )
+
+    token_expires_at = None
+
+    if expires_in:
+        token_expires_at = (
+            datetime.now(timezone.utc)
+            + timedelta(seconds=int(expires_in))
+        )
+
+    user_result = await db.execute(
+        select(User).where(User.email == email)
+    )
+
+    app_user = user_result.scalar_one_or_none()
+
+    if app_user is None:
+        app_user = User(
+            email=email,
+            name=display_name,
+        )
+        db.add(app_user)
+        await db.flush()
+    else:
+        app_user.name = display_name
+
+    result = await db.execute(
+        select(SocialAccount).where(
+            SocialAccount.platform == "facebook",
+            SocialAccount.platform_user_id == platform_user_id,
+        )
+    )
+
+    social_account = result.scalar_one_or_none()
+
+    if social_account:
+        social_account.display_name = display_name
+        social_account.access_token = access_token
+        social_account.token_expires_at = token_expires_at
+        social_account.user_id = app_user.id
+        social_account.status = "active"
+    else:
+        social_account = SocialAccount(
+            user_id=app_user.id,
+            platform="facebook",
+            platform_user_id=platform_user_id,
+            display_name=display_name,
+            access_token=access_token,
+            token_expires_at=token_expires_at,
+            status="active",
+        )
+        db.add(social_account)
+
+    await db.commit()
+    await db.refresh(social_account)
+
+    jwt_token = create_access_token(app_user.id)
+
+    params = urlencode(
+        {
+            "token": jwt_token,
+        }
+    )
+
+    frontend_redirect = (
+        f"{settings.FRONTEND_URL}/auth/callback?{params}"
+    )
+
+    response = RedirectResponse(frontend_redirect)
+
+    response.delete_cookie("facebook_oauth_state")
+
+    return response
+

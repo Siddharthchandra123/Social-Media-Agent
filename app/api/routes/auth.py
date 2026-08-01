@@ -361,6 +361,26 @@ async def facebook_callback(
     access_token = token.get("access_token")
     expires_in = token.get("expires_in")
 
+    async with httpx.AsyncClient() as client:
+        pages_response = await client.get(
+            "https://graph.facebook.com/v23.0/me/accounts",
+            params={
+                "access_token": access_token,
+            },
+        )
+
+    if pages_response.status_code != 200:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Failed to retrieve Facebook Pages",
+                "facebook_response": pages_response.text,
+            },
+        )
+
+    pages = pages_response.json()
+    print("PAGES:", pages)
+
     if not access_token:
         raise HTTPException(
             status_code=400,

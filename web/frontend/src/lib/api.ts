@@ -39,7 +39,10 @@ api.interceptors.response.use(
       removeAccessToken();
 
       if (typeof window !== "undefined") {
-        window.location.href = "/";
+        // Authentication is OAuth-only: the Accounts screen is the
+        // sign-in hub. Avoid an infinite redirect by sending the user
+        // there rather than to the root redirect.
+        window.location.href = "/accounts";
       }
     }
 
@@ -59,6 +62,13 @@ export function setAccessToken(token: string) {
 
 export function removeAccessToken() {
   localStorage.removeItem("access_token");
+}
+
+export function logout() {
+  removeAccessToken();
+  if (typeof window !== "undefined") {
+    window.location.href = "/";
+  }
 }
 
 /* =========================================================
@@ -183,33 +193,27 @@ export interface SchedulingRecommendationResponse {
 ========================================================= */
 
 function handleApiError(error: unknown): never {
-
   if (axios.isAxiosError(error)) {
-
-    const axiosError =
-      error as AxiosError<any>;
-
-    console.error(
-      "API Error:",
-      axiosError.response?.data ||
-      axiosError.message
-    );
-
-    const detail =
-      axiosError.response?.data?.detail;
+    const axiosError = error as AxiosError<{ detail?: unknown; message?: string }>;
+    const data = axiosError.response?.data;
+    const detail = data?.detail;
 
     if (typeof detail === "string") {
       throw new Error(detail);
     }
 
-    if (detail?.message) {
-      throw new Error(detail.message);
+    if (detail && typeof detail === "object" && "message" in detail) {
+      const message = (detail as { message?: string }).message;
+      if (message) {
+        throw new Error(message);
+      }
     }
 
-    throw new Error(
-      axiosError.message ||
-      "Backend request failed"
-    );
+    if (data?.message) {
+      throw new Error(data.message);
+    }
+
+    throw new Error(axiosError.message || "Backend request failed");
   }
 
   throw error;
@@ -235,13 +239,7 @@ export async function checkBackendHealth(): Promise<{
       detail: response.data,
     };
 
-  } catch (error) {
-
-    console.error(
-      "Backend health check failed:",
-      error
-    );
-
+  } catch {
     return {
       online: false,
     };
@@ -367,8 +365,7 @@ export async function createPostFromCandidate(
 
     return response.data;
   } catch (error) {
-    console.error("Create post failed:", error);
-    throw error;
+    return handleApiError(error);
   }
 }
 

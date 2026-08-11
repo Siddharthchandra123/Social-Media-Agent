@@ -17,9 +17,9 @@ class ContentGeneration(Base):
         default=uuid.uuid4,
     )
 
-    brand_id: Mapped[uuid.UUID] = mapped_column(
+    user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("brands.id"),
+        ForeignKey("users.id"),
         nullable=False,
         index=True,
     )
@@ -71,12 +71,6 @@ class ContentGeneration(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
-    )
-
-    brand = relationship(
-        "Brand",
-        back_populates="generations",
-        lazy="selectin",
     )
 
     candidates = relationship(

@@ -17,9 +17,9 @@ class SocialAccount(Base):
         default=uuid.uuid4,
     )
 
-    brand_id: Mapped[uuid.UUID] = mapped_column(
+    user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("brands.id"),
+        ForeignKey("users.id"),
         nullable=False,
         index=True,
     )
@@ -67,8 +67,8 @@ class SocialAccount(Base):
         nullable=False,
     )
 
-    brand = relationship(
-        "Brand",
+    user = relationship(
+        "User",
         back_populates="social_accounts",
         lazy="selectin",
     )

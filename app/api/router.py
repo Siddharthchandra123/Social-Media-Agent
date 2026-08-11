@@ -6,7 +6,7 @@ from app.api.routes import (
     health,
     posts,
     scheduling,
-    workspace,
+    social_accounts,
 )
 
 
@@ -48,7 +48,7 @@ api_router.include_router(
 )
 
 api_router.include_router(
-    workspace.router,
+    social_accounts.router,
     prefix="",
-    tags=["Workspaces & Brands"],
+    tags=["Social Accounts"],
 )

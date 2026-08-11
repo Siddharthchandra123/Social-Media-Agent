@@ -9,18 +9,18 @@ import {
   Sparkles,
   PlugZap,
   Clock,
+  Trash2,
+  CheckCircle2,
 } from "lucide-react";
 import {
   fetchGenerations,
   fetchPosts,
   GenerationResponse,
   PostResponse,
+  API_BASE_URL,
+  getAccessToken,
 } from "@/lib/api";
-import {
-  PLATFORMS,
-  getConnectedPlatforms,
-  ConnectedPlatform,
-} from "@/lib/platforms";
+import { useUser } from "@/state/user-context";
 import { recommendedCandidate, timeAgo } from "@/lib/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -29,14 +29,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PlatformIcon } from "@/components/platform-icon";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { user, socialAccounts, disconnectAccount } = useUser();
   const [generations, setGenerations] = useState<GenerationResponse[] | null>(null);
   const [posts, setPosts] = useState<PostResponse[] | null>(null);
   const [error, setError] = useState(false);
   const [topic, setTopic] = useState("");
-  const [connected] = useState<ConnectedPlatform[]>(() => getConnectedPlatforms());
+  const [disconnecting, setDisconnecting] = useState<string | null>(null);
 
   const load = async () => {
     try {
@@ -69,8 +71,7 @@ export default function DashboardPage() {
   }, []);
 
   const loading = !error && (generations === null || posts === null);
-  const connectedCount = connected.length;
-  const connectedSet = new Set(connected.map((c) => c.platform));
+  const connectedMap = new Map(socialAccounts.map((acc) => [acc.platform, acc]));
 
   const handleQuickCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,11 +79,27 @@ export default function DashboardPage() {
     router.push(`/create${query}`);
   };
 
+  const handleConnect = (platform: "linkedin" | "facebook") => {
+    window.location.href = `${API_BASE_URL}/auth/${platform}`;
+  };
+
+  const handleDisconnect = async (platform: string) => {
+    if (!confirm(`Are you sure you want to disconnect ${platform}?`)) return;
+    try {
+      setDisconnecting(platform);
+      await disconnectAccount(platform);
+    } catch (err: any) {
+      alert(err.message || "Failed to disconnect");
+    } finally {
+      setDisconnecting(null);
+    }
+  };
+
   return (
     <div className="animate-rise">
       <PageHeader
-        title="Dashboard"
-        description="Your AI social media workspace."
+        title={`Welcome back, ${user?.name || "Creator"}`}
+        description="Your AI social media agent and publishing command center."
         actions={
           <Link
             href="/create"
@@ -116,7 +133,7 @@ export default function DashboardPage() {
                 type="text"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                placeholder="What do you want to post about?"
+                placeholder="What do you want to post about today?"
                 className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
               />
               <button
@@ -127,14 +144,10 @@ export default function DashboardPage() {
                 Generate
               </button>
             </form>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Pick a topic, then refine platform, tone, and audience in the
-              Create workspace.
-            </p>
           </section>
 
           {/* Status grid */}
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-3">
             {/* Recent generations */}
             <section className="md:col-span-2">
               <div className="mb-3 flex items-center justify-between">
@@ -153,7 +166,6 @@ export default function DashboardPage() {
 
               {loading ? (
                 <div className="space-y-3">
-                  <Skeleton className="h-20 w-full" />
                   <Skeleton className="h-20 w-full" />
                   <Skeleton className="h-20 w-full" />
                 </div>
@@ -216,12 +228,12 @@ export default function DashboardPage() {
               )}
             </section>
 
-            {/* Accounts */}
+            {/* Connected Accounts */}
             <section>
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="flex items-center gap-2 text-sm font-semibold">
                   <PlugZap className="size-4 text-muted-foreground" aria-hidden="true" />
-                  Accounts
+                  Connected Accounts
                 </h2>
                 <Link
                   href="/accounts"
@@ -232,50 +244,96 @@ export default function DashboardPage() {
                 </Link>
               </div>
 
-              <div className="rounded-xl border border-border bg-card p-2">
-                {PLATFORMS.map((platform) => {
-                  const isConnected = connectedSet.has(platform.id);
-                  return (
-                    <div
-                      key={platform.id}
-                      className="flex items-center gap-3 rounded-lg px-2 py-2.5"
-                    >
-                      <PlatformIcon platform={platform.id} size="sm" />
-                      <span className="flex-1 truncate text-sm text-foreground">
-                        {platform.label}
-                      </span>
-                      {isConnected ? (
-                        <StatusBadge status="published" label="Connected" />
-                      ) : (
-                        <StatusBadge
-                          status="draft"
-                          label={platform.connectAvailable ? "Not connected" : "Soon"}
-                          className="rounded-full bg-muted text-muted-foreground ring-border"
-                        />
-                      )}
+              <div className="rounded-xl border border-border bg-card p-3 space-y-3">
+                {/* LinkedIn */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <PlatformIcon platform="linkedin" size="sm" />
+                    <span className="text-sm font-medium">LinkedIn</span>
+                  </div>
+                  {connectedMap.has("linkedin") ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-emerald-400 font-medium">Connected</span>
+                      <button
+                        onClick={() => handleDisconnect("linkedin")}
+                        disabled={disconnecting === "linkedin"}
+                        className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                        title="Disconnect"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
                     </div>
-                  );
-                })}
-              </div>
+                  ) : (
+                    <button
+                      onClick={() => handleConnect("linkedin")}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      + Connect
+                    </button>
+                  )}
+                </div>
 
-              {connectedCount === 0 && (
-                <Link
-                  href="/accounts"
-                  className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-                >
-                  Connect an account
-                  <ArrowRight className="size-3.5" aria-hidden="true" />
-                </Link>
-              )}
+                <div className="h-px bg-border" />
+
+                {/* Facebook */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <PlatformIcon platform="facebook" size="sm" />
+                    <span className="text-sm font-medium">Facebook</span>
+                  </div>
+                  {connectedMap.has("facebook") ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-emerald-400 font-medium">Connected</span>
+                      <button
+                        onClick={() => handleDisconnect("facebook")}
+                        disabled={disconnecting === "facebook"}
+                        className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                        title="Disconnect"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleConnect("facebook")}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      + Connect
+                    </button>
+                  )}
+                </div>
+
+                <div className="h-px bg-border" />
+
+                {/* Instagram (Coming Soon) */}
+                <div className="flex items-center justify-between opacity-60">
+                  <div className="flex items-center gap-2.5">
+                    <PlatformIcon platform="instagram" size="sm" />
+                    <span className="text-sm font-medium">Instagram</span>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground">Soon</span>
+                </div>
+
+                <div className="h-px bg-border" />
+
+                {/* X / Twitter (Coming Soon) */}
+                <div className="flex items-center justify-between opacity-60">
+                  <div className="flex items-center gap-2.5">
+                    <PlatformIcon platform="x" size="sm" />
+                    <span className="text-sm font-medium">X (Twitter)</span>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground">Soon</span>
+                </div>
+              </div>
             </section>
           </div>
 
           {/* Publishing pipeline */}
-          <section className="mt-4">
+          <section className="mt-6">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-sm font-semibold">
                 <Clock className="size-4 text-muted-foreground" aria-hidden="true" />
-                Publishing
+                Publishing Pipeline
               </h2>
               <Link
                 href="/posts"

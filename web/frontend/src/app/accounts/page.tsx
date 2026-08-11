@@ -1,54 +1,71 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { PlugZap, CheckCircle2, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { PlugZap, CheckCircle2, ArrowRight, Trash2, Clock } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PlatformIcon } from "@/components/platform-icon";
-import { useWorkspaceBrand, SocialAccount } from "@/state/workspace-brand-context";
-import { API_BASE_URL, getAccessToken } from "@/lib/api";
+import { useUser } from "@/state/user-context";
+import { API_BASE_URL } from "@/lib/api";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 export default function AccountsPage() {
-  const { activeBrand, socialAccounts, refreshSocialAccounts } = useWorkspaceBrand();
-  const [loadingPlatform, setLoadingPlatform] = useState<string | null>(null);
+  const { socialAccounts, disconnectAccount } = useUser();
+  const [disconnecting, setDisconnecting] = useState<string | null>(null);
 
-  const handleConnect = (platform: "linkedin" | "facebook") => {
-    const token = getAccessToken();
-    // Redirect to backend OAuth route
-    // Note: Backend OAuth redirects back to frontend, so we can pass brand id if desired or use current active brand
+  const handleConnect = (platform: string) => {
     window.location.href = `${API_BASE_URL}/auth/${platform}`;
   };
 
-  const connectedMap = new Map<string, SocialAccount>();
-  socialAccounts.forEach((acc) => {
-    connectedMap.set(acc.platform, acc);
-  });
+  const handleDisconnect = async (platform: string) => {
+    if (!confirm(`Are you sure you want to disconnect ${platform}?`)) return;
+    try {
+      setDisconnecting(platform);
+      await disconnectAccount(platform);
+    } catch (err: any) {
+      alert(err.message || "Failed to disconnect");
+    } finally {
+      setDisconnecting(null);
+    }
+  };
+
+  const connectedMap = new Map(socialAccounts.map((acc) => [acc.platform, acc]));
 
   const platforms = [
     {
       id: "linkedin" as const,
       label: "LinkedIn",
-      description: "Connect your LinkedIn profile or company page to publish posts.",
+      description: "Connect your LinkedIn account to publish posts instantly.",
       connectAvailable: true,
     },
     {
       id: "facebook" as const,
       label: "Facebook Page",
-      description: "Connect your Facebook Pages to publish content and engage audiences.",
+      description: "Connect your Facebook Pages to publish and engage audiences.",
       connectAvailable: true,
+    },
+    {
+      id: "instagram" as const,
+      label: "Instagram Business",
+      description: "Connect your Instagram business account (Coming Soon).",
+      connectAvailable: false,
+    },
+    {
+      id: "x" as const,
+      label: "X (Twitter)",
+      description: "Connect your X account to broadcast posts (Coming Soon).",
+      connectAvailable: false,
     },
   ];
 
   return (
     <div className="animate-rise">
       <PageHeader
-        title="Connected accounts"
-        description={`Manage social accounts connected to brand: ${activeBrand?.name || "Current Brand"}`}
+        title="Connected Accounts"
+        description="Manage your social platform connections and publishing permissions."
       />
 
       <div className="space-y-6">
         <section>
-          <h2 className="mb-3 text-sm font-semibold">Supported Platforms</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {platforms.map((p) => {
               const account = connectedMap.get(p.id);
@@ -75,27 +92,47 @@ export default function AccountsPage() {
                     {isConnected ? (
                       <div className="flex items-center gap-2 text-xs text-emerald-400">
                         <CheckCircle2 className="size-3.5" aria-hidden="true" />
-                        <span className="font-medium truncate max-w-[180px]">
+                        <span className="font-medium truncate max-w-[160px]">
                           {account.display_name || "Connected"}
                         </span>
                       </div>
-                    ) : (
+                    ) : p.connectAvailable ? (
                       <span className="text-xs text-muted-foreground">
                         Not connected
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        Coming soon
                       </span>
                     )}
 
                     {isConnected ? (
-                      <StatusBadge status="published" label="Active" />
-                    ) : (
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status="published" label="Connected" />
+                        <button
+                          type="button"
+                          onClick={() => handleDisconnect(p.id)}
+                          disabled={disconnecting === p.id}
+                          className="inline-flex h-8 items-center gap-1 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+                        >
+                          <Trash2 className="size-3.5" />
+                          <span>Disconnect</span>
+                        </button>
+                      </div>
+                    ) : p.connectAvailable ? (
                       <button
                         type="button"
                         onClick={() => handleConnect(p.id)}
                         className="inline-flex h-8 items-center gap-1.5 rounded-md bg-foreground px-3 text-xs font-medium text-background transition-opacity hover:opacity-90"
                       >
-                        Connect {p.label}
+                        Connect
                         <ArrowRight className="size-3.5" aria-hidden="true" />
                       </button>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                        <Clock className="size-3" />
+                        Soon
+                      </span>
                     )}
                   </div>
                 </div>
@@ -107,10 +144,10 @@ export default function AccountsPage() {
         <section className="rounded-xl border border-border bg-card p-5">
           <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
             <PlugZap className="size-4 text-muted-foreground" aria-hidden="true" />
-            Brand Context
+            Permanent Account Connections
           </h2>
           <p className="text-sm text-muted-foreground">
-            Social accounts are scoped to your currently selected brand (<span className="text-foreground font-medium">{activeBrand?.name}</span>). Switch brands using the top navigation to manage accounts for other projects.
+            Your connected social accounts are linked permanently to your account. You can log out and log back in at any time without needing to reconnect your accounts.
           </p>
         </section>
       </div>

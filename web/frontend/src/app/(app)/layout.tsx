@@ -1,26 +1,21 @@
 "use client";
 
-import { WorkspaceBrandProvider, useWorkspaceBrand } from "@/state/workspace-brand-context";
-import { OnboardingWizard } from "@/components/workspace/onboarding-wizard";
+import { UserProvider, useUser } from "@/state/user-context";
 import { AppShell } from "@/components/layout/app-shell";
 import { RequireAuth } from "@/components/require-auth";
 
-function WorkspaceBrandGate({ children }: { children: React.ReactNode }) {
-  const { workspaces, brands, loading } = useWorkspaceBrand();
+function UserGate({ children }: { children: React.ReactNode }) {
+  const { loading } = useUser();
 
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
           <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto mb-4" />
-          <p className="text-sm text-muted-foreground">Loading your workspace...</p>
+          <p className="text-sm text-muted-foreground">Loading your account...</p>
         </div>
       </div>
     );
-  }
-
-  if (workspaces.length === 0 || brands.length === 0) {
-    return <OnboardingWizard />;
   }
 
   return <AppShell>{children}</AppShell>;
@@ -33,9 +28,9 @@ export default function AppLayout({
 }) {
   return (
     <RequireAuth>
-      <WorkspaceBrandProvider>
-        <WorkspaceBrandGate>{children}</WorkspaceBrandGate>
-      </WorkspaceBrandProvider>
+      <UserProvider>
+        <UserGate>{children}</UserGate>
+      </UserProvider>
     </RequireAuth>
   );
 }

@@ -6,6 +6,7 @@ from app.api.routes import (
     health,
     posts,
     scheduling,
+    workspace,
 )
 
 
@@ -44,4 +45,10 @@ api_router.include_router(
     auth.router,
     prefix="/auth",
     tags=["Authentication"],
+)
+
+api_router.include_router(
+    workspace.router,
+    prefix="",
+    tags=["Workspaces & Brands"],
 )

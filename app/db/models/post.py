@@ -3,7 +3,7 @@ from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -17,16 +17,22 @@ class Post(Base):
         default=uuid.uuid4,
     )
 
-    user_id: Mapped[uuid.UUID | None] = mapped_column(
+    brand_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id"),
-        nullable=True,
+        ForeignKey("brands.id"),
+        nullable=False,
         index=True,
     )
 
     candidate_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("content_candidates.id"),
+        nullable=True,
+    )
+
+    social_account_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("social_accounts.id"),
         nullable=True,
     )
 
@@ -95,4 +101,10 @@ class Post(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+
+    brand = relationship(
+        "Brand",
+        back_populates="posts",
+        lazy="selectin",
     )

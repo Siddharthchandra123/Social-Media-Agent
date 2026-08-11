@@ -27,6 +27,18 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
+  if (typeof window !== "undefined") {
+    const activeWorkspaceId = localStorage.getItem("active_workspace_id");
+    const activeBrandId = localStorage.getItem("active_brand_id");
+
+    if (activeWorkspaceId && config.headers) {
+      config.headers["X-Workspace-ID"] = activeWorkspaceId;
+    }
+    if (activeBrandId && config.headers) {
+      config.headers["X-Brand-ID"] = activeBrandId;
+    }
+  }
+
   return config;
 });
 

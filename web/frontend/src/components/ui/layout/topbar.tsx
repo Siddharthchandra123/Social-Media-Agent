@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, Plus } from "lucide-react";
+import { WorkspaceBrandSelector } from "@/components/workspace/workspace-brand-selector";
 
 interface TopbarProps {
   onOpenMobileNav: () => void;
@@ -13,22 +14,17 @@ export function Topbar({ onOpenMobileNav }: TopbarProps) {
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background/80 px-4 backdrop-blur sm:px-6">
-      <button
-        type="button"
-        onClick={onOpenMobileNav}
-        aria-label="Open navigation"
-        className="flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
-      >
-        <Menu className="size-4.5" aria-hidden="true" />
-      </button>
+      <div className="flex items-center gap-4">
+        <button
+          type="button"
+          onClick={onOpenMobileNav}
+          aria-label="Open navigation"
+          className="flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
+        >
+          <Menu className="size-4.5" aria-hidden="true" />
+        </button>
 
-      <div className="hidden text-sm text-muted-foreground sm:block">
-        {pathname === "/dashboard" && "Overview"}
-        {pathname === "/create" && "AI Content Studio"}
-        {pathname === "/content" && "Content history"}
-        {pathname === "/posts" && "Publishing"}
-        {pathname === "/accounts" && "Connected accounts"}
-        {pathname === "/settings" && "Settings"}
+        <WorkspaceBrandSelector />
       </div>
 
       <div className="flex items-center gap-2">

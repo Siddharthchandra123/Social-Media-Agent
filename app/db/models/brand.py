@@ -8,8 +8,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 
-class ContentGeneration(Base):
-    __tablename__ = "content_generations"
+class Brand(Base):
+    __tablename__ = "brands"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -17,47 +17,28 @@ class ContentGeneration(Base):
         default=uuid.uuid4,
     )
 
-    brand_id: Mapped[uuid.UUID] = mapped_column(
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("brands.id"),
+        ForeignKey("workspaces.id"),
         nullable=False,
         index=True,
     )
 
-    platform: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-    )
-
-    topic: Mapped[str] = mapped_column(
-        Text,
-        nullable=False,
-    )
-
-    objective: Mapped[str] = mapped_column(
-        String(100),
+    name: Mapped[str] = mapped_column(
+        String(255),
         nullable=False,
     )
 
     tone: Mapped[str] = mapped_column(
         String(200),
         nullable=False,
+        default="Professional, engaging, authoritative",
     )
 
-    audience: Mapped[str] = mapped_column(
+    target_audience: Mapped[str] = mapped_column(
         Text,
         nullable=False,
-    )
-
-    status: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-        default="processing",
-    )
-
-    recommended_candidate_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
-        nullable=True,
+        default="Professionals, founders, and creators",
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -73,15 +54,29 @@ class ContentGeneration(Base):
         nullable=False,
     )
 
-    brand = relationship(
-        "Brand",
-        back_populates="generations",
+    workspace = relationship(
+        "Workspace",
+        back_populates="brands",
         lazy="selectin",
     )
 
-    candidates = relationship(
-        "ContentCandidate",
-        back_populates="generation",
+    social_accounts = relationship(
+        "SocialAccount",
+        back_populates="brand",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    generations = relationship(
+        "ContentGeneration",
+        back_populates="brand",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    posts = relationship(
+        "Post",
+        back_populates="brand",
         cascade="all, delete-orphan",
         lazy="selectin",
     )

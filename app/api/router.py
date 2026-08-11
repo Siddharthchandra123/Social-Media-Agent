@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     auth,
+    account_auth,
     content,
     health,
     posts,
@@ -42,9 +43,16 @@ api_router.include_router(
 
 
 api_router.include_router(
+    account_auth.router,
+    prefix="",
+    tags=["Account Auth"],
+)
+
+
+api_router.include_router(
     auth.router,
     prefix="/auth",
-    tags=["Authentication"],
+    tags=["Social OAuth"],
 )
 
 api_router.include_router(

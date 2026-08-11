@@ -1,250 +1,80 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  PenLine,
-  FolderOpen,
-  Send,
-  PlugZap,
-  Settings,
-  Sparkles,
-  X,
-  LogOut,
-} from "lucide-react";
-import { useEffect, useState } from "react";
-import { checkBackendHealth, logout } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { LogOut, LayoutDashboard, PenLine, FileText, Send, PlugZap, Settings } from "lucide-react";
+import { logout } from "@/lib/api";
+import { useUser } from "@/state/user-context";
 
-export const NAV_ITEMS = [
-  {
-    section: "Workspace",
-    items: [
-      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { name: "Create", href: "/create", icon: PenLine, badge: "AI" },
-      { name: "Content", href: "/content", icon: FolderOpen },
-      { name: "Publishing", href: "/posts", icon: Send },
-    ],
-  },
-  {
-    section: "Manage",
-    items: [
-      { name: "Accounts", href: "/accounts", icon: PlugZap },
-      { name: "Settings", href: "/settings", icon: Settings },
-    ],
-  },
-];
+export function Sidebar() {
+  const pathname = usePathname();
+  const { user } = useUser();
 
-function NavItem({
-  name,
-  href,
-  icon: Icon,
-  active,
-  badge,
-}: {
-  name: string;
-  href: string;
-  icon: typeof LayoutDashboard;
-  active: boolean;
-  badge?: string;
-}) {
+  const links = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/create", label: "AI Studio", icon: PenLine },
+    { href: "/content", label: "Content", icon: FileText },
+    { href: "/posts", label: "Publishing", icon: Send },
+    { href: "/accounts", label: "Connected Accounts", icon: PlugZap },
+    { href: "/settings", label: "Settings", icon: Settings },
+  ];
+
   return (
-    <Link
-      href={href}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "group flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
-        active
-          ? "bg-accent text-accent-foreground"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-      )}
-    >
-      <Icon
-        className={cn("size-4 shrink-0", active && "text-foreground")}
-        aria-hidden="true"
-      />
-      <span className="flex-1 truncate">{name}</span>
-      {badge && (
-        <span
-          className={cn(
-            "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
-            active
-              ? "bg-accent-foreground/10 text-accent-foreground"
-              : "bg-muted text-muted-foreground"
-          )}
+    <div className="flex h-full flex-col justify-between p-4">
+      <div className="space-y-6">
+        <div className="flex items-center gap-2.5 px-2">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
+            SA
+          </div>
+          <div>
+            <h1 className="text-sm font-semibold text-foreground">Social Agent</h1>
+            <p className="text-xs text-muted-foreground truncate max-w-[140px]">{user?.email || "Agent Account"}</p>
+          </div>
+        </div>
+
+        <nav className="space-y-1">
+          {links.map((link) => {
+            const Icon = link.icon;
+            const active = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  active
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <Icon className="size-4" />
+                <span>{link.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      <div className="border-t border-border pt-4">
+        <button
+          onClick={logout}
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
-          {badge}
-        </span>
-      )}
-    </Link>
-  );
-}
-
-function Brand() {
-  return (
-    <Link href="/dashboard" className="flex items-center gap-2.5 px-2 py-1">
-      <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-        <Sparkles className="size-4" aria-hidden="true" />
-      </span>
-      <span className="text-sm font-semibold tracking-tight">SocialAgent</span>
-    </Link>
-  );
-}
-
-function BackendStatus() {
-  const [online, setOnline] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-    const check = async () => {
-      const { online } = await checkBackendHealth();
-      if (mounted) setOnline(online);
-    };
-    check();
-    const interval = setInterval(check, 30000);
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-    };
-  }, []);
-
-  return (
-    <div className="flex items-center justify-between gap-2 px-2 py-1.5">
-      <span className="text-xs text-muted-foreground">API</span>
-      <span
-        className={cn(
-          "inline-flex items-center gap-1.5 text-xs font-medium",
-          online === null && "text-muted-foreground",
-          online === true && "text-emerald-400",
-          online === false && "text-destructive"
-        )}
-      >
-        <span
-          className={cn(
-            "size-1.5 rounded-full",
-            online === null && "bg-muted-foreground/60",
-            online === true && "bg-emerald-400",
-            online === false && "bg-destructive"
-          )}
-          aria-hidden="true"
-        />
-        {online === null ? "Checking" : online ? "Connected" : "Offline"}
-      </span>
+          <LogOut className="size-4" />
+          <span>Logout</span>
+        </button>
+      </div>
     </div>
   );
 }
 
-export function Sidebar() {
-  const pathname = usePathname();
-
+export function MobileSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
   return (
-    <nav aria-label="Main navigation" className="flex h-full flex-col">
-      <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-3">
-        <Brand />
+    <div className="fixed inset-0 z-50 flex bg-black/50 lg:hidden">
+      <div className="w-64 bg-sidebar border-r border-sidebar-border">
+        <Sidebar />
       </div>
-      <div className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
-        {NAV_ITEMS.map((group) => (
-          <div key={group.section}>
-            <p className="mb-1.5 px-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
-              {group.section}
-            </p>
-            <div className="space-y-0.5">
-              {group.items.map((item) => (
-                <NavItem
-                  key={item.href}
-                  {...item}
-                  active={pathname === item.href}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="space-y-2 border-t border-sidebar-border p-3">
-        <BackendStatus />
-        <button
-          type="button"
-          onClick={logout}
-          className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <LogOut className="size-4" aria-hidden="true" />
-          Sign out
-        </button>
-      </div>
-    </nav>
-  );
-}
-
-interface MobileSidebarProps {
-  open: boolean;
-  onClose: () => void;
-}
-
-export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
-  const pathname = usePathname();
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [open, onClose]);
-
-  return (
-    <div className={cn("lg:hidden", open ? "fixed inset-0 z-50" : "hidden")}>
-      <div
-        className="absolute inset-0 bg-background/70 backdrop-blur-sm animate-fade"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-      <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar shadow-xl dark:shadow-black/50 animate-rise">
-        <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-3">
-          <Brand />
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close navigation"
-            className="flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <X className="size-4" aria-hidden="true" />
-          </button>
-        </div>
-        <div className="flex-1 space-y-6 overflow-y-auto px-3 py-4" onClick={onClose}>
-          {NAV_ITEMS.map((group) => (
-            <div key={group.section}>
-              <p className="mb-1.5 px-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
-                {group.section}
-              </p>
-              <div className="space-y-0.5">
-                {group.items.map((item) => (
-                  <NavItem
-                    key={item.href}
-                    {...item}
-                    active={pathname === item.href}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="border-t border-sidebar-border p-3">
-          <button
-            type="button"
-            onClick={logout}
-            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <LogOut className="size-4" aria-hidden="true" />
-            Sign out
-          </button>
-        </div>
-      </div>
+      <div className="flex-1" onClick={onClose} />
     </div>
   );
 }

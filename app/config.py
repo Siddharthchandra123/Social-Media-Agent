@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     FRONTEND_URL: str
 
     GEMINI_API_KEY: str
-    GEMINI_MODEL: str = "gemini-3.6-flash"
+    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
 
     REDIS_URL: str = "redis://localhost:6379/0"
     DEFAULT_TIMEZONE: str = "Asia/Kolkata"

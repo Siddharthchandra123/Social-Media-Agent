@@ -8,8 +8,8 @@ from sqlalchemy import select
 
 from app.db.models.social_account import SocialAccount
 from app.publishing.linkedin import LinkedInPublisher
-from app.publishing.linkedin import LinkedInPublisher
 from app.config import settings
+from app.security.encryption import token_encryptor
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -264,7 +264,7 @@ class PostService:
             )
 
         publisher = LinkedInPublisher(
-            access_token=social_account.access_token,
+            access_token=token_encryptor.decrypt(social_account.access_token) or social_account.access_token,
             platform_user_id=(
                 social_account.platform_user_id
             ),

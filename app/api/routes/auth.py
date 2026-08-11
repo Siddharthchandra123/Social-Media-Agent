@@ -1,27 +1,38 @@
+import uuid
+from datetime import datetime, timedelta, timezone
 import secrets
 from urllib.parse import urlencode
 
 import httpx
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse, RedirectResponse
-
-from app.config import settings
-
-from datetime import datetime, timedelta, timezone
-
-from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.db.models.social_account import SocialAccount
 from app.db.models.user import User
 from app.db.session import get_db
-from app.auth.jwt import create_access_token
+from app.auth.jwt import create_access_token, decode_access_token
+from app.auth.dependencies import get_current_user
+from app.security.encryption import token_encryptor
+
 router = APIRouter()
 
 
+@router.get("/me", response_model=dict)
+async def get_current_user_profile(
+    current_user: User = Depends(get_current_user),
+):
+    return {
+        "id": str(current_user.id),
+        "email": current_user.email,
+        "name": current_user.name,
+    }
+
+
 @router.get("/linkedin")
-async def linkedin_login():
+async def linkedin_login(token: str | None = None):
     state = secrets.token_urlsafe(32)
 
     params = {
@@ -32,24 +43,29 @@ async def linkedin_login():
         "scope": "openid email profile w_member_social",
     }
 
-    print("AUTH PARAMS:", params)   # <-- ADD HERE
-
     authorization_url = (
         "https://www.linkedin.com/oauth/v2/authorization?"
         + urlencode(params)
     )
 
-    response = RedirectResponse(
-        url=authorization_url
-    )
+    response = RedirectResponse(url=authorization_url)
 
     response.set_cookie(
-        key="linkedin_oauth_state",
+        key="oauth_state",
         value=state,
         httponly=True,
         max_age=600,
         samesite="lax",
     )
+
+    if token:
+        response.set_cookie(
+            key="connect_jwt",
+            value=token,
+            httponly=True,
+            max_age=600,
+            samesite="lax",
+        )
 
     return response
 
@@ -66,41 +82,19 @@ async def linkedin_callback(
     if error:
         raise HTTPException(
             status_code=400,
-            detail={
-                "error": error,
-                "description": error_description,
-            },
+            detail={"error": error, "description": error_description},
         )
 
-    saved_state = request.cookies.get(
-        "linkedin_oauth_state"
-    )
+    saved_state = request.cookies.get("oauth_state")
+    connect_jwt = request.cookies.get("connect_jwt")
 
-    if not state or not saved_state:
-        raise HTTPException(
-            status_code=400,
-            detail="Missing OAuth state",
-        )
-
-    if not secrets.compare_digest(
-        state,
-        saved_state,
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid OAuth state",
-        )
+    if not state or not saved_state or not secrets.compare_digest(state, saved_state):
+        raise HTTPException(status_code=400, detail="Invalid or missing OAuth state")
 
     if not code:
-        raise HTTPException(
-            status_code=400,
-            detail="Missing authorization code",
-        )
+        raise HTTPException(status_code=400, detail="Missing authorization code")
 
-    token_url = (
-        "https://www.linkedin.com/oauth/v2/accessToken"
-    )
-
+    token_url = "https://www.linkedin.com/oauth/v2/accessToken"
     token_data = {
         "grant_type": "authorization_code",
         "code": code,
@@ -109,165 +103,111 @@ async def linkedin_callback(
         "redirect_uri": settings.LINKEDIN_REDIRECT_URI,
     }
 
-    print("TOKEN DATA:", {
-        "grant_type": token_data["grant_type"],
-        "client_id": token_data["client_id"],
-        "redirect_uri": token_data["redirect_uri"],
-    })  # <-- ADD HERE (don't print the secret)
-
     async with httpx.AsyncClient() as client:
-        token_response = await client.post(
-            token_url,
-            data=token_data,
-        )
+        token_response = await client.post(token_url, data=token_data)
 
     if token_response.status_code != 200:
         raise HTTPException(
             status_code=400,
             detail={
                 "message": "LinkedIn token exchange failed",
-                "linkedin_response": token_response.text,
+                "response": token_response.text,
             },
         )
 
-    token = token_response.json()
-
-    access_token = token.get("access_token")
-    expires_in = token.get("expires_in")
+    token_json = token_response.json()
+    access_token = token_json.get("access_token")
+    expires_in = token_json.get("expires_in")
 
     if not access_token:
-        raise HTTPException(
-            status_code=400,
-            detail="LinkedIn did not return an access token",
-        )
+        raise HTTPException(status_code=400, detail="LinkedIn did not return an access token")
 
     async with httpx.AsyncClient() as client:
         user_response = await client.get(
             "https://api.linkedin.com/v2/userinfo",
-            headers={
-                "Authorization": f"Bearer {access_token}",
-            },
+            headers={"Authorization": f"Bearer {access_token}"},
         )
 
     if user_response.status_code != 200:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": "Failed to retrieve LinkedIn user",
-                "linkedin_response": user_response.text,
-            },
-        )
+        raise HTTPException(status_code=400, detail="Failed to retrieve LinkedIn user info")
 
-    user = user_response.json()
+    li_user = user_response.json()
+    platform_user_id = li_user.get("sub")
+    display_name = li_user.get("name")
+    email = li_user.get("email")
 
-    platform_user_id = user.get("sub")
-    display_name = user.get("name")
-    email = user.get("email")
-
-    if not platform_user_id:
-        raise HTTPException(
-            status_code=400,
-            detail="LinkedIn did not return a member ID",
-        )
-
-    if not email:
-        raise HTTPException(
-            status_code=400,
-            detail="LinkedIn did not return an email address",
-        )
+    if not platform_user_id or not email:
+        raise HTTPException(status_code=400, detail="LinkedIn profile incomplete")
 
     token_expires_at = None
-
     if expires_in:
-        token_expires_at = (
-            datetime.now(timezone.utc)
-            + timedelta(seconds=int(expires_in))
-        )
+        token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=int(expires_in))
 
-    user_result = await db.execute(
-        select(User).where(User.email == email)
-    )
+    encrypted_token = token_encryptor.encrypt(access_token)
 
-    app_user = user_result.scalar_one_or_none()
+    # Determine user: if connect_jwt exists, use that user. Otherwise find/create by email.
+    app_user = None
+    if connect_jwt:
+        try:
+            uid = decode_access_token(connect_jwt)
+            user_res = await db.execute(select(User).where(User.id == uid))
+            app_user = user_res.scalar_one_or_none()
+        except Exception:
+            pass
 
-    if app_user is None:
-        app_user = User(
-            email=email,
-            name=display_name,
-        )
-        db.add(app_user)
-        await db.flush()
-    else:
-        app_user.name = display_name
+    if not app_user:
+        user_res = await db.execute(select(User).where(User.email == email))
+        app_user = user_res.scalar_one_or_none()
+        if not app_user:
+            app_user = User(email=email, name=display_name or "Agent User")
+            db.add(app_user)
+            await db.flush()
 
+    # Check existing social account for this user & platform
     result = await db.execute(
         select(SocialAccount).where(
+            SocialAccount.user_id == app_user.id,
             SocialAccount.platform == "linkedin",
-            SocialAccount.platform_user_id == platform_user_id,
         )
     )
-
     social_account = result.scalar_one_or_none()
 
     if social_account:
-        # Account already connected — update its credentials
+        social_account.platform_user_id = platform_user_id
         social_account.display_name = display_name
-        social_account.access_token = access_token
+        social_account.access_token = encrypted_token
         social_account.token_expires_at = token_expires_at
-        social_account.user_id = app_user.id
         social_account.status = "active"
-
     else:
-        # First time connecting this LinkedIn account
         social_account = SocialAccount(
             user_id=app_user.id,
             platform="linkedin",
             platform_user_id=platform_user_id,
             display_name=display_name,
-            access_token=access_token,
+            access_token=encrypted_token,
             token_expires_at=token_expires_at,
             status="active",
         )
-
         db.add(social_account)
 
     await db.commit()
-    await db.refresh(social_account)
 
     jwt_token = create_access_token(app_user.id)
-
-    params = urlencode(
-        {
-            "token": jwt_token,
-        }
-    )
-
-    frontend_redirect = (
-        f"{settings.FRONTEND_URL}/auth/callback?{params}"
-    )
-
-    response = RedirectResponse(frontend_redirect)
-
-    response.delete_cookie("linkedin_oauth_state")
-
+    response = RedirectResponse(f"{settings.FRONTEND_URL}/auth/callback?token={jwt_token}")
+    response.delete_cookie("oauth_state")
+    response.delete_cookie("connect_jwt")
     return response
 
-@router.get("/debug-config")
-async def debug_config():
-    return {
-        "client_id": settings.LINKEDIN_CLIENT_ID,
-        "redirect_uri": settings.LINKEDIN_REDIRECT_URI,
-    }
 
 @router.get("/facebook")
-async def facebook_login():
+async def facebook_login(token: str | None = None):
     state = secrets.token_urlsafe(32)
 
     params = {
         "client_id": settings.FACEBOOK_CLIENT_ID,
         "redirect_uri": settings.FACEBOOK_REDIRECT_URI,
         "state": state,
-        "scope": "email,pages_show_list,pages_read_engagement",
+        "scope": "email,pages_show_list,pages_read_engagement,pages_manage_posts",
     }
 
     authorization_url = (
@@ -278,14 +218,24 @@ async def facebook_login():
     response = RedirectResponse(url=authorization_url)
 
     response.set_cookie(
-        key="facebook_oauth_state",
+        key="oauth_state",
         value=state,
         httponly=True,
         max_age=600,
         samesite="lax",
     )
 
+    if token:
+        response.set_cookie(
+            key="connect_jwt",
+            value=token,
+            httponly=True,
+            max_age=600,
+            samesite="lax",
+        )
+
     return response
+
 
 @router.get("/facebook/callback")
 async def facebook_callback(
@@ -299,41 +249,19 @@ async def facebook_callback(
     if error:
         raise HTTPException(
             status_code=400,
-            detail={
-                "error": error,
-                "description": error_description,
-            },
+            detail={"error": error, "description": error_description},
         )
 
-    saved_state = request.cookies.get(
-        "facebook_oauth_state"
-    )
+    saved_state = request.cookies.get("oauth_state")
+    connect_jwt = request.cookies.get("connect_jwt")
 
-    if not state or not saved_state:
-        raise HTTPException(
-            status_code=400,
-            detail="Missing OAuth state",
-        )
-
-    if not secrets.compare_digest(
-        state,
-        saved_state,
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid OAuth state",
-        )
+    if not state or not saved_state or not secrets.compare_digest(state, saved_state):
+        raise HTTPException(status_code=400, detail="Invalid or missing OAuth state")
 
     if not code:
-        raise HTTPException(
-            status_code=400,
-            detail="Missing authorization code",
-        )
+        raise HTTPException(status_code=400, detail="Missing authorization code")
 
-    token_url = (
-        "https://graph.facebook.com/v23.0/oauth/access_token"
-    )
-
+    token_url = "https://graph.facebook.com/v23.0/oauth/access_token"
     token_params = {
         "client_id": settings.FACEBOOK_CLIENT_ID,
         "client_secret": settings.FACEBOOK_CLIENT_SECRET,
@@ -342,125 +270,89 @@ async def facebook_callback(
     }
 
     async with httpx.AsyncClient() as client:
-        token_response = await client.get(
-            token_url,
-            params=token_params,
-        )
+        token_response = await client.get(token_url, params=token_params)
 
     if token_response.status_code != 200:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": "Facebook token exchange failed",
-                "facebook_response": token_response.text,
-            },
-        )
+        raise HTTPException(status_code=400, detail="Facebook token exchange failed")
 
-    token = token_response.json()
+    token_json = token_response.json()
+    user_access_token = token_json.get("access_token")
+    expires_in = token_json.get("expires_in")
 
-    access_token = token.get("access_token")
-    expires_in = token.get("expires_in")
+    if not user_access_token:
+        raise HTTPException(status_code=400, detail="Facebook did not return an access token")
 
+    # Get Facebook Pages & Page Access Tokens
     async with httpx.AsyncClient() as client:
-        pages_response = await client.get(
+        pages_res = await client.get(
             "https://graph.facebook.com/v23.0/me/accounts",
-            params={
-                "access_token": access_token,
-            },
+            params={"access_token": user_access_token},
         )
 
-    if pages_response.status_code != 200:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": "Failed to retrieve Facebook Pages",
-                "facebook_response": pages_response.text,
-            },
-        )
+    page_id = None
+    page_name = None
+    page_access_token = None
 
-    pages = pages_response.json()
-    print("PAGES:", pages)
+    if pages_res.status_code == 200:
+        pages_data = pages_res.json().get("data", [])
+        if pages_data:
+            # Pick the first managed page as the publishable entity
+            page_id = pages_data[0].get("id")
+            page_name = pages_data[0].get("name")
+            page_access_token = pages_data[0].get("access_token")
 
-    if not access_token:
-        raise HTTPException(
-            status_code=400,
-            detail="Facebook did not return an access token",
-        )
-
+    # Fallback to user profile if no page found
     async with httpx.AsyncClient() as client:
-        user_response = await client.get(
+        user_res = await client.get(
             "https://graph.facebook.com/me",
-            params={
-                "fields": "id,name,email",
-                "access_token": access_token,
-            },
+            params={"fields": "id,name,email", "access_token": user_access_token},
         )
 
-    if user_response.status_code != 200:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": "Failed to retrieve Facebook user",
-                "facebook_response": user_response.text,
-            },
-        )
+    if user_res.status_code != 200:
+        raise HTTPException(status_code=400, detail="Failed to retrieve Facebook user")
 
-    user = user_response.json()
-
-    platform_user_id = user.get("id")
-    display_name = user.get("name")
-    email = user.get("email")
-
-    if not platform_user_id:
-        raise HTTPException(
-            status_code=400,
-            detail="Facebook did not return a user ID",
-        )
-
-    if not email:
-        raise HTTPException(
-            status_code=400,
-            detail="Facebook did not return an email address",
-        )
+    fb_user = user_res.json()
+    platform_user_id = page_id or fb_user.get("id")
+    display_name = page_name or fb_user.get("name")
+    email = fb_user.get("email") or f"{platform_user_id}@facebook.user"
+    final_token = page_access_token or user_access_token
 
     token_expires_at = None
-
     if expires_in:
-        token_expires_at = (
-            datetime.now(timezone.utc)
-            + timedelta(seconds=int(expires_in))
-        )
+        token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=int(expires_in))
 
-    user_result = await db.execute(
-        select(User).where(User.email == email)
-    )
+    encrypted_token = token_encryptor.encrypt(final_token)
 
-    app_user = user_result.scalar_one_or_none()
+    app_user = None
+    if connect_jwt:
+        try:
+            uid = decode_access_token(connect_jwt)
+            user_res = await db.execute(select(User).where(User.id == uid))
+            app_user = user_res.scalar_one_or_none()
+        except Exception:
+            pass
 
-    if app_user is None:
-        app_user = User(
-            email=email,
-            name=display_name,
-        )
-        db.add(app_user)
-        await db.flush()
-    else:
-        app_user.name = display_name
+    if not app_user:
+        user_res = await db.execute(select(User).where(User.email == email))
+        app_user = user_res.scalar_one_or_none()
+        if not app_user:
+            app_user = User(email=email, name=display_name or "Agent User")
+            db.add(app_user)
+            await db.flush()
 
     result = await db.execute(
         select(SocialAccount).where(
+            SocialAccount.user_id == app_user.id,
             SocialAccount.platform == "facebook",
-            SocialAccount.platform_user_id == platform_user_id,
         )
     )
-
     social_account = result.scalar_one_or_none()
 
     if social_account:
+        social_account.platform_user_id = platform_user_id
         social_account.display_name = display_name
-        social_account.access_token = access_token
+        social_account.access_token = encrypted_token
         social_account.token_expires_at = token_expires_at
-        social_account.user_id = app_user.id
         social_account.status = "active"
     else:
         social_account = SocialAccount(
@@ -468,30 +360,16 @@ async def facebook_callback(
             platform="facebook",
             platform_user_id=platform_user_id,
             display_name=display_name,
-            access_token=access_token,
+            access_token=encrypted_token,
             token_expires_at=token_expires_at,
             status="active",
         )
         db.add(social_account)
 
     await db.commit()
-    await db.refresh(social_account)
 
     jwt_token = create_access_token(app_user.id)
-
-    params = urlencode(
-        {
-            "token": jwt_token,
-        }
-    )
-
-    frontend_redirect = (
-        f"{settings.FRONTEND_URL}/auth/callback?{params}"
-    )
-
-    response = RedirectResponse(frontend_redirect)
-
-    response.delete_cookie("facebook_oauth_state")
-
+    response = RedirectResponse(f"{settings.FRONTEND_URL}/auth/callback?token={jwt_token}")
+    response.delete_cookie("oauth_state")
+    response.delete_cookie("connect_jwt")
     return response
-

@@ -5,7 +5,7 @@ import { PlugZap, CheckCircle2, ArrowRight, Trash2, Clock } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PlatformIcon } from "@/components/platform-icon";
 import { useUser } from "@/state/user-context";
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL, getAccessToken } from "@/lib/api";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 export default function AccountsPage() {
@@ -13,7 +13,9 @@ export default function AccountsPage() {
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
 
   const handleConnect = (platform: string) => {
-    window.location.href = `${API_BASE_URL}/auth/${platform}`;
+    const token = getAccessToken();
+    const query = token ? `?token=${encodeURIComponent(token)}` : "";
+    window.location.href = `${API_BASE_URL}/auth/${platform}${query}`;
   };
 
   const handleDisconnect = async (platform: string) => {

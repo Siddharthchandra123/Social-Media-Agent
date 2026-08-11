@@ -79,8 +79,10 @@ export default function DashboardPage() {
     router.push(`/create${query}`);
   };
 
-  const handleConnect = (platform: "linkedin" | "facebook") => {
-    window.location.href = `${API_BASE_URL}/auth/${platform}`;
+  const handleConnect = (platform: string) => {
+    const token = getAccessToken();
+    const query = token ? `?token=${encodeURIComponent(token)}` : "";
+    window.location.href = `${API_BASE_URL}/auth/${platform}${query}`;
   };
 
   const handleDisconnect = async (platform: string) => {

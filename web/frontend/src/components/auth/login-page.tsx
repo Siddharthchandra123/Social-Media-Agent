@@ -28,7 +28,7 @@ export function LoginPage() {
       
       const res = await api.post(endpoint, payload);
       setAccessToken(res.data.access_token);
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err: any) {
       setError(err?.response?.data?.detail || err.message || "Authentication failed");
     } finally {

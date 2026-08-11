@@ -302,6 +302,9 @@ class PostService:
             return post
 
         except Exception as exc:
+            import logging
+
+            logging.exception("PUBLISHING FAILED")
 
             post.status = "failed"
             post.failure_reason = str(exc)

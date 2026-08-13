@@ -9,6 +9,7 @@ from sqlalchemy import select
 from app.db.models.social_account import SocialAccount
 from app.publishing.linkedin import LinkedInPublisher
 from app.publishing.facebook import FacebookPublisher
+from app.publishing.instagram import InstagramPublisher
 from app.config import settings
 from app.security.encryption import token_encryptor
 from sqlalchemy import select
@@ -227,7 +228,7 @@ class PostService:
                 "Post must be approved before publishing"
             )
 
-        if post.platform not in ["linkedin", "facebook"]:
+        if post.platform not in ["linkedin", "facebook", "instagram"]:
             raise InvalidPostStateError(
                 f"Publishing for {post.platform} "
                 "is not implemented yet"
@@ -273,6 +274,11 @@ class PostService:
             publisher = FacebookPublisher(
                 page_access_token=decrypted_token,
                 page_id=social_account.platform_user_id,
+            )
+        elif post.platform == "instagram":
+            publisher = InstagramPublisher(
+                access_token=decrypted_token,
+                instagram_business_id=social_account.platform_user_id,
             )
         else:
             raise InvalidPostStateError("Unsupported platform")

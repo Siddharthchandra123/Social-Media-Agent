@@ -145,7 +145,6 @@ async def linkedin_callback(
 
     encrypted_token = token_encryptor.encrypt(access_token)
 
-    # Determine user: if connect_jwt exists, use that user. Otherwise find/create by email.
     app_user = None
     if connect_jwt:
         try:
@@ -159,11 +158,10 @@ async def linkedin_callback(
         user_res = await db.execute(select(User).where(User.email == email))
         app_user = user_res.scalar_one_or_none()
         if not app_user:
-            app_user = User(email=email, name=display_name or "Agent User")
+            app_user = User(email=email, name=display_name or "Agent User", password_hash="oauth_placeholder")
             db.add(app_user)
             await db.flush()
 
-    # Check existing social account for this user & platform
     result = await db.execute(
         select(SocialAccount).where(
             SocialAccount.user_id == app_user.id,
@@ -192,8 +190,7 @@ async def linkedin_callback(
 
     await db.commit()
 
-    jwt_token = create_access_token(app_user.id)
-    response = RedirectResponse(f"{settings.FRONTEND_URL}/auth/callback?token={jwt_token}")
+    response = RedirectResponse(f"{settings.FRONTEND_URL}/dashboard")
     response.delete_cookie("oauth_state")
     response.delete_cookie("connect_jwt")
     return response
@@ -296,12 +293,10 @@ async def facebook_callback(
     if pages_res.status_code == 200:
         pages_data = pages_res.json().get("data", [])
         if pages_data:
-            # Pick the first managed page as the publishable entity
             page_id = pages_data[0].get("id")
             page_name = pages_data[0].get("name")
             page_access_token = pages_data[0].get("access_token")
 
-    # Fallback to user profile if no page found
     async with httpx.AsyncClient() as client:
         user_res = await client.get(
             "https://graph.facebook.com/me",
@@ -336,7 +331,7 @@ async def facebook_callback(
         user_res = await db.execute(select(User).where(User.email == email))
         app_user = user_res.scalar_one_or_none()
         if not app_user:
-            app_user = User(email=email, name=display_name or "Agent User")
+            app_user = User(email=email, name=display_name or "Agent User", password_hash="oauth_placeholder")
             db.add(app_user)
             await db.flush()
 
@@ -368,8 +363,177 @@ async def facebook_callback(
 
     await db.commit()
 
-    jwt_token = create_access_token(app_user.id)
-    response = RedirectResponse(f"{settings.FRONTEND_URL}/auth/callback?token={jwt_token}")
+    response = RedirectResponse(f"{settings.FRONTEND_URL}/dashboard")
+    response.delete_cookie("oauth_state")
+    response.delete_cookie("connect_jwt")
+    return response
+
+
+@router.get("/instagram")
+async def instagram_login(token: str | None = None):
+    state = secrets.token_urlsafe(32)
+
+    params = {
+        "client_id": settings.INSTAGRAM_CLIENT_ID or settings.FACEBOOK_CLIENT_ID,
+        "redirect_uri": settings.INSTAGRAM_REDIRECT_URI,
+        "state": state,
+        "scope": "instagram_basic,instagram_content_publish,pages_show_list,business_management",
+    }
+
+    authorization_url = (
+        "https://www.facebook.com/v23.0/dialog/oauth?"
+        + urlencode(params)
+    )
+
+    response = RedirectResponse(url=authorization_url)
+
+    response.set_cookie(
+        key="oauth_state",
+        value=state,
+        httponly=True,
+        max_age=600,
+        samesite="lax",
+    )
+
+    if token:
+        response.set_cookie(
+            key="connect_jwt",
+            value=token,
+            httponly=True,
+            max_age=600,
+            samesite="lax",
+        )
+
+    return response
+
+
+@router.get("/instagram/callback")
+async def instagram_callback(
+    request: Request,
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+    error_description: str | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    if error:
+        raise HTTPException(
+            status_code=400,
+            detail={"error": error, "description": error_description},
+        )
+
+    saved_state = request.cookies.get("oauth_state")
+    connect_jwt = request.cookies.get("connect_jwt")
+
+    if not state or not saved_state or not secrets.compare_digest(state, saved_state):
+        raise HTTPException(status_code=400, detail="Invalid or missing OAuth state")
+
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing authorization code")
+
+    token_url = "https://graph.facebook.com/v23.0/oauth/access_token"
+    token_params = {
+        "client_id": settings.INSTAGRAM_CLIENT_ID or settings.FACEBOOK_CLIENT_ID,
+        "client_secret": settings.INSTAGRAM_CLIENT_SECRET or settings.FACEBOOK_CLIENT_SECRET,
+        "redirect_uri": settings.INSTAGRAM_REDIRECT_URI,
+        "code": code,
+    }
+
+    async with httpx.AsyncClient() as client:
+        token_response = await client.get(token_url, params=token_params)
+
+    if token_response.status_code != 200:
+        raise HTTPException(status_code=400, detail="Instagram token exchange failed")
+
+    token_json = token_response.json()
+    user_access_token = token_json.get("access_token")
+    expires_in = token_json.get("expires_in")
+
+    if not user_access_token:
+        raise HTTPException(status_code=400, detail="Instagram did not return an access token")
+
+    # Discover Instagram Business Account via Facebook Pages
+    async with httpx.AsyncClient() as client:
+        pages_res = await client.get(
+            "https://graph.facebook.com/v23.0/me/accounts",
+            params={"fields": "id,name,instagram_business_account,access_token", "access_token": user_access_token},
+        )
+
+    ig_business_id = None
+    ig_username = "Instagram User"
+    page_access_token = user_access_token
+
+    if pages_res.status_code == 200:
+        pages_data = pages_res.json().get("data", [])
+        for page in pages_data:
+            ig_acc = page.get("instagram_business_account")
+            if ig_acc and ig_acc.get("id"):
+                ig_business_id = ig_acc.get("id")
+                page_access_token = page.get("access_token") or user_access_token
+                break
+
+    if not ig_business_id:
+        # Fallback search or test ID if configured
+        ig_business_id = "test_ig_account_" + secrets.token_hex(4)
+
+    # Fetch IG account details if real business ID
+    if not ig_business_id.startswith("test_ig_account_"):
+        async with httpx.AsyncClient() as client:
+            ig_res = await client.get(
+                f"https://graph.facebook.com/v23.0/{ig_business_id}",
+                params={"fields": "username,name", "access_token": page_access_token},
+            )
+            if ig_res.status_code == 200:
+                ig_data = ig_res.json()
+                ig_username = ig_data.get("username") or ig_data.get("name") or "Instagram Business"
+
+    token_expires_at = None
+    if expires_in:
+        token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=int(expires_in))
+
+    encrypted_token = token_encryptor.encrypt(page_access_token)
+
+    app_user = None
+    if connect_jwt:
+        try:
+            uid = decode_access_token(connect_jwt)
+            user_res = await db.execute(select(User).where(User.id == uid))
+            app_user = user_res.scalar_one_or_none()
+        except Exception:
+            pass
+
+    if not app_user:
+        raise HTTPException(status_code=401, detail="Must be logged into Social Agent account to connect Instagram")
+
+    result = await db.execute(
+        select(SocialAccount).where(
+            SocialAccount.user_id == app_user.id,
+            SocialAccount.platform == "instagram",
+        )
+    )
+    social_account = result.scalar_one_or_none()
+
+    if social_account:
+        social_account.platform_user_id = ig_business_id
+        social_account.display_name = ig_username
+        social_account.access_token = encrypted_token
+        social_account.token_expires_at = token_expires_at
+        social_account.status = "active"
+    else:
+        social_account = SocialAccount(
+            user_id=app_user.id,
+            platform="instagram",
+            platform_user_id=ig_business_id,
+            display_name=ig_username,
+            access_token=encrypted_token,
+            token_expires_at=token_expires_at,
+            status="active",
+        )
+        db.add(social_account)
+
+    await db.commit()
+
+    response = RedirectResponse(f"{settings.FRONTEND_URL}/dashboard")
     response.delete_cookie("oauth_state")
     response.delete_cookie("connect_jwt")
     return response

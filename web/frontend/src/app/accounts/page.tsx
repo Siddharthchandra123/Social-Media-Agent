@@ -48,8 +48,8 @@ export default function AccountsPage() {
     {
       id: "instagram" as const,
       label: "Instagram Business",
-      description: "Connect your Instagram business account (Coming Soon).",
-      connectAvailable: false,
+      description: "Connect your Instagram business account to publish reels & feed posts.",
+      connectAvailable: true,
     },
     {
       id: "x" as const,

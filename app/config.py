@@ -40,6 +40,13 @@ class Settings(BaseSettings):
         "https://social-media-agent-uud2.onrender.com/api/v1/auth/facebook/callback"
     )
 
+    # Instagram OAuth (shares Meta App credentials or separate if configured)
+    INSTAGRAM_CLIENT_ID: str = ""
+    INSTAGRAM_CLIENT_SECRET: str = ""
+    INSTAGRAM_REDIRECT_URI: str = (
+        "https://social-media-agent-uud2.onrender.com/api/v1/auth/instagram/callback"
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

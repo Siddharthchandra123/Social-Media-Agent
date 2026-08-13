@@ -307,13 +307,37 @@ export default function DashboardPage() {
 
                 <div className="h-px bg-border" />
 
-                {/* Instagram (Coming Soon) */}
-                <div className="flex items-center justify-between opacity-60">
+                {/* Instagram */}
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <PlatformIcon platform="instagram" size="sm" />
                     <span className="text-sm font-medium">Instagram</span>
+                    {connectedMap.has("instagram") && (
+                      <span className="text-xs text-muted-foreground">
+                        @{connectedMap.get("instagram")?.display_name}
+                      </span>
+                    )}
                   </div>
-                  <span className="text-[11px] text-muted-foreground">Soon</span>
+                  {connectedMap.has("instagram") ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-emerald-400 font-medium">Connected</span>
+                      <button
+                        onClick={() => handleDisconnect("instagram")}
+                        disabled={disconnecting === "instagram"}
+                        className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                        title="Disconnect"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleConnect("instagram")}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      + Connect
+                    </button>
+                  )}
                 </div>
 
                 <div className="h-px bg-border" />

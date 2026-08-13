@@ -1,21 +1,56 @@
 "use client";
 
 import { useState } from "react";
-import { PlugZap, CheckCircle2, ArrowRight, Trash2, Clock } from "lucide-react";
+import { PlugZap } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import { PlatformIcon } from "@/components/platform-icon";
+import { PlatformAccountCard } from "@/components/platform-account-card";
 import { useUser } from "@/state/user-context";
 import { API_BASE_URL, getAccessToken } from "@/lib/api";
-import { StatusBadge } from "@/components/ui/status-badge";
+
+const PLATFORMS: {
+  id: "linkedin" | "facebook" | "instagram" | "x";
+  description: string;
+  connectAvailable: boolean;
+}[] = [
+  {
+    id: "linkedin",
+    description:
+      "Connect your LinkedIn account to publish posts and grow your professional presence.",
+    connectAvailable: true,
+  },
+  {
+    id: "facebook",
+    description:
+      "Connect your Facebook Pages to publish updates and engage your audience.",
+    connectAvailable: true,
+  },
+  {
+    id: "instagram",
+    description:
+      "Connect your Instagram business account to publish reels and feed posts.",
+    connectAvailable: true,
+  },
+  {
+    id: "x",
+    description:
+      "Connect your X account to broadcast short-form posts (coming soon).",
+    connectAvailable: false,
+  },
+];
 
 export default function AccountsPage() {
   const { socialAccounts, disconnectAccount } = useUser();
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
 
+  const connectedMap = new Map(socialAccounts.map((acc) => [acc.platform, acc]));
+  const connectedCount = socialAccounts.filter(
+    (a) => a.status === "active"
+  ).length;
+
   const handleConnect = (platform: string) => {
     const token = getAccessToken();
     const query = token ? `?token=${encodeURIComponent(token)}` : "";
-    window.location.href = `${API_BASE_URL}/auth/${platform}${query}`;
+    window.location.assign(`${API_BASE_URL}/auth/${platform}${query}`);
   };
 
   const handleDisconnect = async (platform: string) => {
@@ -23,41 +58,12 @@ export default function AccountsPage() {
     try {
       setDisconnecting(platform);
       await disconnectAccount(platform);
-    } catch (err: any) {
-      alert(err.message || "Failed to disconnect");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to disconnect");
     } finally {
       setDisconnecting(null);
     }
   };
-
-  const connectedMap = new Map(socialAccounts.map((acc) => [acc.platform, acc]));
-
-  const platforms = [
-    {
-      id: "linkedin" as const,
-      label: "LinkedIn",
-      description: "Connect your LinkedIn account to publish posts instantly.",
-      connectAvailable: true,
-    },
-    {
-      id: "facebook" as const,
-      label: "Facebook Page",
-      description: "Connect your Facebook Pages to publish and engage audiences.",
-      connectAvailable: true,
-    },
-    {
-      id: "instagram" as const,
-      label: "Instagram Business",
-      description: "Connect your Instagram business account to publish reels & feed posts.",
-      connectAvailable: true,
-    },
-    {
-      id: "x" as const,
-      label: "X (Twitter)",
-      description: "Connect your X account to broadcast posts (Coming Soon).",
-      connectAvailable: false,
-    },
-  ];
 
   return (
     <div className="animate-rise">
@@ -66,92 +72,36 @@ export default function AccountsPage() {
         description="Manage your social platform connections and publishing permissions."
       />
 
-      <div className="space-y-6">
-        <section>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {platforms.map((p) => {
-              const account = connectedMap.get(p.id);
-              const isConnected = !!account;
-
-              return (
-                <div
-                  key={p.id}
-                  className="flex flex-col justify-between gap-4 rounded-xl border border-border bg-card p-5"
-                >
-                  <div className="flex items-start gap-3">
-                    <PlatformIcon platform={p.id} />
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-medium text-foreground">
-                        {p.label}
-                      </h3>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {p.description}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-2 border-t border-border pt-4">
-                    {isConnected ? (
-                      <div className="flex items-center gap-2 text-xs text-emerald-400">
-                        <CheckCircle2 className="size-3.5" aria-hidden="true" />
-                        <span className="font-medium truncate max-w-[160px]">
-                          {account.display_name || "Connected"}
-                        </span>
-                      </div>
-                    ) : p.connectAvailable ? (
-                      <span className="text-xs text-muted-foreground">
-                        Not connected
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">
-                        Coming soon
-                      </span>
-                    )}
-
-                    {isConnected ? (
-                      <div className="flex items-center gap-2">
-                        <StatusBadge status="published" label="Connected" />
-                        <button
-                          type="button"
-                          onClick={() => handleDisconnect(p.id)}
-                          disabled={disconnecting === p.id}
-                          className="inline-flex h-8 items-center gap-1 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
-                        >
-                          <Trash2 className="size-3.5" />
-                          <span>Disconnect</span>
-                        </button>
-                      </div>
-                    ) : p.connectAvailable ? (
-                      <button
-                        type="button"
-                        onClick={() => handleConnect(p.id)}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-md bg-foreground px-3 text-xs font-medium text-background transition-opacity hover:opacity-90"
-                      >
-                        Connect
-                        <ArrowRight className="size-3.5" aria-hidden="true" />
-                      </button>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                        <Clock className="size-3" />
-                        Soon
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+      <section className="mb-6 flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-soft sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <PlugZap className="size-5" aria-hidden="true" />
           </div>
-        </section>
+          <div>
+            <p className="text-sm font-semibold tracking-tight text-foreground">
+              {connectedCount} of 3 platforms connected
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Connections are permanent — you won&apos;t need to reconnect after
+              logging out.
+            </p>
+          </div>
+        </div>
+      </section>
 
-        <section className="rounded-xl border border-border bg-card p-5">
-          <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-            <PlugZap className="size-4 text-muted-foreground" aria-hidden="true" />
-            Permanent Account Connections
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Your connected social accounts are linked permanently to your account. You can log out and log back in at any time without needing to reconnect your accounts.
-          </p>
-        </section>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {PLATFORMS.map((p) => (
+          <PlatformAccountCard
+            key={p.id}
+            platform={p.id}
+            description={p.description}
+            account={connectedMap.get(p.id)}
+            connectAvailable={p.connectAvailable}
+            disconnecting={disconnecting === p.id}
+            onConnect={() => handleConnect(p.id)}
+            onDisconnect={() => handleDisconnect(p.id)}
+          />
+        ))}
       </div>
     </div>
   );

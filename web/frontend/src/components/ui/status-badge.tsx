@@ -1,16 +1,40 @@
 import { cn } from "@/lib/utils";
 
-const STATUS_STYLES: Record<string, string> = {
+const STATUS_STYLES: Record<string, { badge: string; dot: string }> = {
   // generation
-  completed: "bg-emerald-500/10 text-emerald-400 ring-emerald-500/30",
-  processing: "bg-amber-500/10 text-amber-400 ring-amber-500/30",
-  failed: "bg-destructive/10 text-destructive ring-destructive/25",
+  completed: {
+    badge: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/25 dark:text-emerald-400",
+    dot: "bg-emerald-500",
+  },
+  processing: {
+    badge: "bg-amber-500/10 text-amber-600 ring-amber-500/25 dark:text-amber-400",
+    dot: "bg-amber-500",
+  },
+  failed: {
+    badge: "bg-destructive/10 text-destructive ring-destructive/25",
+    dot: "bg-destructive",
+  },
   // post lifecycle
-  draft: "bg-zinc-500/10 text-zinc-400 ring-zinc-500/30",
-  approved: "bg-sky-500/10 text-sky-400 ring-sky-500/30",
-  scheduled: "bg-indigo-500/10 text-indigo-400 ring-indigo-500/30",
-  publishing: "bg-amber-500/10 text-amber-400 ring-amber-500/30",
-  published: "bg-emerald-500/10 text-emerald-400 ring-emerald-500/30",
+  draft: {
+    badge: "bg-zinc-500/10 text-zinc-600 ring-zinc-500/25 dark:text-zinc-400",
+    dot: "bg-zinc-500",
+  },
+  approved: {
+    badge: "bg-sky-500/10 text-sky-600 ring-sky-500/25 dark:text-sky-400",
+    dot: "bg-sky-500",
+  },
+  scheduled: {
+    badge: "bg-indigo-500/10 text-indigo-600 ring-indigo-500/25 dark:text-indigo-400",
+    dot: "bg-indigo-500",
+  },
+  publishing: {
+    badge: "bg-amber-500/10 text-amber-600 ring-amber-500/25 dark:text-amber-400",
+    dot: "bg-amber-500",
+  },
+  published: {
+    badge: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/25 dark:text-emerald-400",
+    dot: "bg-emerald-500",
+  },
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -41,17 +65,27 @@ export function StatusBadge({
   label,
   pulse,
 }: StatusBadgeProps) {
+  const style = STATUS_STYLES[status];
+
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset",
-        STATUS_STYLES[status] ?? "bg-muted text-muted-foreground ring-border",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset",
+        style?.badge ?? "bg-muted text-muted-foreground ring-border",
         className
       )}
     >
-      {pulse && (
+      {pulse || status === "publishing" || status === "processing" ? (
         <span
-          className="size-1.5 rounded-full bg-current animate-pulse"
+          className={cn(
+            "size-1.5 rounded-full bg-current animate-pulse",
+            style?.dot
+          )}
+          aria-hidden="true"
+        />
+      ) : (
+        <span
+          className={cn("size-1.5 rounded-full bg-current", style?.dot)}
           aria-hidden="true"
         />
       )}

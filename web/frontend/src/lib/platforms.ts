@@ -16,10 +16,13 @@ export interface PlatformMeta {
   connectAvailable: boolean;
   /**
    * Whether the backend can publish to this platform.
-   * Currently only LinkedIn publishing is implemented server-side.
    */
   publishAvailable: boolean;
   icon: typeof LinkedinIcon;
+  /** Tailwind classes for the brand-tinted icon tile. */
+  tintClass: string;
+  /** Tailwind classes for the brand-colored dot/text accent. */
+  accentClass: string;
 }
 
 export const PLATFORMS: PlatformMeta[] = [
@@ -31,6 +34,8 @@ export const PLATFORMS: PlatformMeta[] = [
     connectAvailable: true,
     publishAvailable: true,
     icon: LinkedinIcon,
+    tintClass: "bg-[#0a66c2]/12 text-[#0a66c2] dark:bg-[#0a66c2]/25 dark:text-[#7cb8eb]",
+    accentClass: "text-[#0a66c2] dark:text-[#7cb8eb]",
   },
   {
     id: "facebook",
@@ -38,17 +43,21 @@ export const PLATFORMS: PlatformMeta[] = [
     shortLabel: "Fb",
     description: "Pages & Groups — connect via OAuth",
     connectAvailable: true,
-    publishAvailable: false,
+    publishAvailable: true,
     icon: FacebookIcon,
+    tintClass: "bg-[#1877f2]/12 text-[#1877f2] dark:bg-[#1877f2]/25 dark:text-[#7db2f8]",
+    accentClass: "text-[#1877f2] dark:text-[#7db2f8]",
   },
   {
     id: "instagram",
     label: "Instagram",
     shortLabel: "Ig",
     description: "Reels & feed publishing",
-    connectAvailable: false,
-    publishAvailable: false,
+    connectAvailable: true,
+    publishAvailable: true,
     icon: InstagramIcon,
+    tintClass: "bg-[#e4405f]/12 text-[#e4405f] dark:bg-[#e4405f]/25 dark:text-[#f59ab1]",
+    accentClass: "text-[#e4405f] dark:text-[#f59ab1]",
   },
   {
     id: "x",
@@ -58,12 +67,12 @@ export const PLATFORMS: PlatformMeta[] = [
     connectAvailable: false,
     publishAvailable: false,
     icon: TwitterIcon,
+    tintClass: "bg-muted text-muted-foreground",
+    accentClass: "text-muted-foreground",
   },
 ];
 
-export function getPlatformMeta(
-  platform: string | null
-): PlatformMeta {
+export function getPlatformMeta(platform: string | null): PlatformMeta {
   return (
     PLATFORMS.find((p) => p.id === platform) ?? PLATFORMS[0]
   );
@@ -71,12 +80,6 @@ export function getPlatformMeta(
 
 /* ------------------------------------------------------------------ */
 /*  OAuth connect flow                                                */
-/*                                                                     */
-/*  The backend signs you in AND connects the account through          */
-/*  /auth/{platform}, then redirects to `/auth/callback?token=...`     */
-/*  with a fresh JWT. Because the JWT can only exist once the backend  */
-/*  created/updated the social account, recording the platform before  */
-/*  the redirect lets us honestly show "connected" on return.          */
 /* ------------------------------------------------------------------ */
 
 export function connectUrl(platform: PlatformType) {

@@ -12,6 +12,8 @@ import {
   X,
   Check,
   Loader2,
+  AlertTriangle,
+  RefreshCcw,
 } from "lucide-react";
 import {
   fetchPosts,
@@ -26,6 +28,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PlatformIcon } from "@/components/platform-icon";
+import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/utils";
 
 const TABS: { id: string; name: string }[] = [
@@ -36,6 +39,21 @@ const TABS: { id: string; name: string }[] = [
   { id: "published", name: "Published" },
 ];
 
+function friendlyError(reason: string | null): string {
+  if (!reason) return "Publishing failed. Please try again.";
+  const lower = reason.toLowerCase();
+  if (lower.includes("no active") || lower.includes("not connected")) {
+    return "No connected account for this platform. Connect it in Connected Accounts and try again.";
+  }
+  if (lower.includes("access token") || lower.includes("token")) {
+    return "The connected account token is invalid or expired. Reconnect the account and try again.";
+  }
+  if (lower.includes("media container") || lower.includes("not ready")) {
+    return "The platform wasn't ready to accept the post yet. Please try again in a moment.";
+  }
+  return reason.length > 220 ? `${reason.slice(0, 220)}…` : reason;
+}
+
 export default function PostPipelinePage() {
   const [posts, setPosts] = useState<PostResponse[]>([]);
   const [activeTab, setActiveTab] = useState("all");
@@ -45,7 +63,10 @@ export default function PostPipelinePage() {
   // Scheduling Modal state
   const [schedulingPostId, setSchedulingPostId] = useState<string | null>(null);
   const [scheduleDatetime, setScheduleDatetime] = useState("");
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<{
+    text: string;
+    kind: "success" | "error";
+  } | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const loadPostsData = useCallback(async () => {
@@ -79,16 +100,19 @@ export default function PostPipelinePage() {
     };
   }, []);
 
+  const showMessage = (text: string, kind: "success" | "error" = "success") => {
+    setActionMessage({ text, kind });
+    setTimeout(() => setActionMessage(null), 4000);
+  };
+
   const handleApprove = async (postId: string) => {
     setActionLoading(postId);
     try {
       await approvePost(postId);
-      setActionMessage("Post approved");
+      showMessage("Post approved and ready to publish");
       await loadPostsData();
-      setTimeout(() => setActionMessage(null), 3000);
     } catch {
-      setActionMessage("Failed to approve post");
-      setTimeout(() => setActionMessage(null), 3000);
+      showMessage("Failed to approve post", "error");
     } finally {
       setActionLoading(null);
     }
@@ -98,27 +122,25 @@ export default function PostPipelinePage() {
     setActionLoading(postId);
     try {
       await publishPostNow(postId);
-      setActionMessage("Publishing post...");
+      showMessage("Publishing post...");
 
-      // Poll until Celery finishes publishing.
+      // Poll until backend finishes publishing.
       for (let i = 0; i < 10; i++) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         const data = await fetchPosts();
         setPosts(data);
         const updatedPost = data.find((p) => p.id === postId);
         if (updatedPost?.status === "published") {
-          setActionMessage("Post published");
+          showMessage("Post published successfully");
           break;
         }
         if (updatedPost?.status === "failed") {
-          setActionMessage("Post publishing failed");
+          showMessage(friendlyError(updatedPost.failure_reason), "error");
           break;
         }
       }
-      setTimeout(() => setActionMessage(null), 3000);
     } catch {
-      setActionMessage("Failed to publish post");
-      setTimeout(() => setActionMessage(null), 3000);
+      showMessage("Failed to publish post", "error");
     } finally {
       setActionLoading(null);
     }
@@ -130,14 +152,12 @@ export default function PostPipelinePage() {
 
     try {
       await schedulePost(schedulingPostId, scheduleDatetime);
-      setActionMessage("Post scheduled");
+      showMessage("Post scheduled");
       setSchedulingPostId(null);
       setScheduleDatetime("");
       await loadPostsData();
-      setTimeout(() => setActionMessage(null), 3000);
     } catch {
-      setActionMessage("Failed to schedule post");
-      setTimeout(() => setActionMessage(null), 3000);
+      showMessage("Failed to schedule post", "error");
     }
   };
 
@@ -154,7 +174,7 @@ export default function PostPipelinePage() {
         actions={
           <Link
             href="/create"
-            className="inline-flex h-8 items-center gap-1.5 rounded-md bg-foreground px-3.5 text-sm font-medium text-background transition-opacity hover:opacity-90"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-medium text-primary-foreground shadow-soft transition-all hover:opacity-90 active:translate-y-px"
           >
             <Sparkles className="size-4" aria-hidden="true" />
             New generation
@@ -163,19 +183,39 @@ export default function PostPipelinePage() {
       />
 
       {actionMessage && (
-        <div className="mb-4 flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-400">
+        <div
+          role="status"
+          className={cn(
+            "mb-4 flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm",
+            actionMessage.kind === "success"
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              : "border-destructive/30 bg-destructive/10 text-destructive"
+          )}
+        >
           <span className="flex items-center gap-2">
-            <CheckCircle2 className="size-4" aria-hidden="true" />
-            {actionMessage}
+            {actionMessage.kind === "success" ? (
+              <CheckCircle2 className="size-4" aria-hidden="true" />
+            ) : (
+              <AlertTriangle className="size-4" aria-hidden="true" />
+            )}
+            {actionMessage.text}
           </span>
-          <button onClick={() => setActionMessage(null)} aria-label="Dismiss">
+          <button
+            onClick={() => setActionMessage(null)}
+            aria-label="Dismiss notification"
+            className="text-current opacity-70 transition-opacity hover:opacity-100"
+          >
             <X className="size-4" aria-hidden="true" />
           </button>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="mb-4 flex items-center gap-1 overflow-x-auto border-b border-border pb-2">
+      <div
+        className="mb-5 flex items-center gap-1 overflow-x-auto border-b border-border pb-2"
+        role="tablist"
+        aria-label="Filter posts by status"
+      >
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           const count =
@@ -186,11 +226,13 @@ export default function PostPipelinePage() {
           return (
             <button
               key={tab.id}
+              role="tab"
+              aria-selected={isActive}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors",
+                "inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium whitespace-nowrap transition-colors",
                 isActive
-                  ? "bg-accent text-accent-foreground"
+                  ? "bg-accent text-accent-foreground shadow-soft"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
@@ -211,9 +253,9 @@ export default function PostPipelinePage() {
         />
       ) : loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Skeleton className="h-48 w-full" />
-          <Skeleton className="h-48 w-full" />
-          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-52 w-full" />
+          <Skeleton className="h-52 w-full" />
+          <Skeleton className="h-52 w-full" />
         </div>
       ) : filteredPosts.length === 0 ? (
         <EmptyState
@@ -223,7 +265,7 @@ export default function PostPipelinePage() {
           action={
             <Link
               href="/create"
-              className="inline-flex h-8 items-center gap-1.5 rounded-md bg-foreground px-3.5 text-sm font-medium text-background transition-opacity hover:opacity-90"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
             >
               <Sparkles className="size-4" aria-hidden="true" />
               Create content
@@ -235,7 +277,10 @@ export default function PostPipelinePage() {
           {filteredPosts.map((post) => (
             <div
               key={post.id}
-              className="flex flex-col justify-between rounded-xl border border-border bg-card p-5"
+              className={cn(
+                "flex flex-col justify-between rounded-xl border bg-card p-5 shadow-soft transition-all hover:shadow-card",
+                post.status === "failed" && "border-destructive/30"
+              )}
             >
               <div className="space-y-4">
                 {/* Card header */}
@@ -273,6 +318,19 @@ export default function PostPipelinePage() {
                   )}
                 </div>
 
+                {/* Failure reason */}
+                {post.status === "failed" && (
+                  <div className="rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                    <p className="flex items-center gap-1.5 font-medium">
+                      <AlertTriangle className="size-3.5" aria-hidden="true" />
+                      Couldn&apos;t publish
+                    </p>
+                    <p className="mt-1 text-muted-foreground">
+                      {friendlyError(post.failure_reason)}
+                    </p>
+                  </div>
+                )}
+
                 {/* Metadata */}
                 {post.scheduled_at && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -298,7 +356,7 @@ export default function PostPipelinePage() {
                   <button
                     onClick={() => handleApprove(post.id)}
                     disabled={actionLoading === post.id}
-                    className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md bg-emerald-500/10 text-sm font-medium text-emerald-400 ring-1 ring-inset ring-emerald-500/30 transition-colors hover:bg-emerald-500/20 disabled:opacity-50"
+                    className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-500/10 text-sm font-medium text-emerald-600 ring-1 ring-inset ring-emerald-500/30 transition-colors hover:bg-emerald-500/20 disabled:opacity-50 dark:text-emerald-400"
                   >
                     {actionLoading === post.id ? (
                       <Loader2 className="size-4 animate-spin" aria-hidden="true" />
@@ -318,7 +376,7 @@ export default function PostPipelinePage() {
                           new Date(Date.now() + 86400000).toISOString().slice(0, 16)
                         );
                       }}
-                      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-border bg-background text-sm font-medium text-foreground transition-colors hover:bg-muted"
                     >
                       <Calendar className="size-3.5" aria-hidden="true" />
                       Schedule
@@ -326,7 +384,7 @@ export default function PostPipelinePage() {
                     <button
                       onClick={() => handlePublishNow(post.id)}
                       disabled={actionLoading === post.id}
-                      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-foreground text-xs font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
+                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-primary text-sm font-medium text-primary-foreground shadow-soft transition-opacity hover:opacity-90 disabled:opacity-50"
                     >
                       {actionLoading === post.id ? (
                         <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
@@ -342,7 +400,7 @@ export default function PostPipelinePage() {
                   <button
                     onClick={() => handlePublishNow(post.id)}
                     disabled={actionLoading === post.id}
-                    className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                    className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-background text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
                   >
                     {actionLoading === post.id ? (
                       <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
@@ -352,6 +410,25 @@ export default function PostPipelinePage() {
                     Publish immediately
                   </button>
                 )}
+
+                {post.status === "published" && (
+                  <p className="py-1 text-center text-xs text-emerald-600 dark:text-emerald-400">
+                    {post.external_post_id
+                      ? "Live on your connected account"
+                      : "Published successfully"}
+                  </p>
+                )}
+
+                {post.status === "failed" && (
+                  <button
+                    onClick={() => handleApprove(post.id)}
+                    disabled={actionLoading === post.id}
+                    className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-background text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                  >
+                    <RefreshCcw className="size-3.5" aria-hidden="true" />
+                    Reset to approved
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -359,60 +436,47 @@ export default function PostPipelinePage() {
       )}
 
       {/* Schedule Post Modal */}
-      {schedulingPostId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl animate-rise">
-            <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
-              <h2 className="flex items-center gap-2 text-sm font-semibold">
-                <Calendar className="size-4 text-muted-foreground" aria-hidden="true" />
-                Schedule post
-              </h2>
-              <button
-                onClick={() => setSchedulingPostId(null)}
-                aria-label="Close"
-                className="flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                <X className="size-4" aria-hidden="true" />
-              </button>
-            </div>
-
-            <form onSubmit={handleScheduleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="schedule-datetime"
-                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
-                >
-                  Date & time
-                </label>
-                <input
-                  id="schedule-datetime"
-                  type="datetime-local"
-                  required
-                  value={scheduleDatetime}
-                  onChange={(e) => setScheduleDatetime(e.target.value)}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setSchedulingPostId(null)}
-                  className="inline-flex h-8 items-center rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="inline-flex h-8 items-center rounded-md bg-foreground px-4 text-sm font-medium text-background transition-opacity hover:opacity-90"
-                >
-                  Confirm
-                </button>
-              </div>
-            </form>
+      <Modal
+        open={Boolean(schedulingPostId)}
+        onClose={() => setSchedulingPostId(null)}
+        title="Schedule post"
+        description="Pick a date and time for this post to go live."
+      >
+        <form onSubmit={handleScheduleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label
+              htmlFor="schedule-datetime"
+              className="text-label"
+            >
+              Date &amp; time
+            </label>
+            <input
+              id="schedule-datetime"
+              type="datetime-local"
+              required
+              value={scheduleDatetime}
+              onChange={(e) => setScheduleDatetime(e.target.value)}
+              className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+            />
           </div>
-        </div>
-      )}
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setSchedulingPostId(null)}
+              className="inline-flex h-9 items-center rounded-lg px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow-soft transition-all hover:opacity-90 active:translate-y-px"
+            >
+              Confirm
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

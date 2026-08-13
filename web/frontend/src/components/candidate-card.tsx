@@ -86,15 +86,22 @@ export function CandidateCard({
   return (
     <article
       className={cn(
-        "flex flex-col gap-4 rounded-xl border bg-card p-5",
+        "flex flex-col gap-4 rounded-xl border bg-card p-5 shadow-soft transition-all hover:shadow-card",
         recommended
-          ? "border-ring/40 shadow-sm"
+          ? "border-ring/40"
           : "border-border"
       )}
     >
       <header className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-sm font-semibold text-foreground">
+          <span
+            className={cn(
+              "flex size-8 shrink-0 items-center justify-center rounded-lg text-sm font-semibold",
+              recommended
+                ? "bg-primary/10 text-primary"
+                : "bg-muted text-muted-foreground"
+            )}
+          >
             {candidate.rank}
           </span>
           <div>
@@ -218,10 +225,10 @@ export function CandidateCard({
             onClick={handleUse}
             disabled={using || used}
             className={cn(
-              "inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-60",
+              "inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-60",
               used
-                ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-inset ring-emerald-500/30"
-                : "bg-foreground text-background hover:opacity-90"
+                ? "bg-emerald-500/10 text-emerald-600 ring-1 ring-inset ring-emerald-500/30 dark:text-emerald-400"
+                : "bg-primary text-primary-foreground shadow-soft hover:opacity-90 active:translate-y-px"
             )}
           >
             {using ? (

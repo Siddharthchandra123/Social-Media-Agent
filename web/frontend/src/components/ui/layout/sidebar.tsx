@@ -2,64 +2,127 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LogOut, LayoutDashboard, PenLine, FileText, Send, PlugZap, Settings } from "lucide-react";
+import {
+  LogOut,
+  LayoutDashboard,
+  PenLine,
+  FileText,
+  Send,
+  PlugZap,
+  Settings,
+  X,
+  Sparkles,
+} from "lucide-react";
 import { logout } from "@/lib/api";
 import { useUser } from "@/state/user-context";
+import { cn } from "@/lib/utils";
+import { Drawer } from "@base-ui/react/drawer";
 
-export function Sidebar() {
+const NAV_SECTIONS: {
+  label: string;
+  items: { href: string; label: string; icon: typeof LayoutDashboard }[];
+}[] = [
+  {
+    label: "Workspace",
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/create", label: "AI Studio", icon: PenLine },
+      { href: "/content", label: "Content", icon: FileText },
+    ],
+  },
+  {
+    label: "Publish",
+    items: [
+      { href: "/posts", label: "Publishing", icon: Send },
+      { href: "/accounts", label: "Connected Accounts", icon: PlugZap },
+    ],
+  },
+  {
+    label: "Account",
+    items: [{ href: "/settings", label: "Settings", icon: Settings }],
+  },
+];
+
+function isActive(pathname: string, href: string) {
+  if (href === "/dashboard") return pathname === href;
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+export function SidebarContent({
+  onNavigate,
+}: {
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
   const { user } = useUser();
 
-  const links = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/create", label: "AI Studio", icon: PenLine },
-    { href: "/content", label: "Content", icon: FileText },
-    { href: "/posts", label: "Publishing", icon: Send },
-    { href: "/accounts", label: "Connected Accounts", icon: PlugZap },
-    { href: "/settings", label: "Settings", icon: Settings },
-  ];
-
   return (
-    <div className="flex h-full flex-col justify-between p-4">
-      <div className="space-y-6">
-        <div className="flex items-center gap-2.5 px-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
-            SA
-          </div>
-          <div>
-            <h1 className="text-sm font-semibold text-foreground">Social Agent</h1>
-            <p className="text-xs text-muted-foreground truncate max-w-[140px]">{user?.email || "Agent Account"}</p>
-          </div>
+    <div className="flex h-full flex-col">
+      {/* Brand */}
+      <div className="flex items-center gap-3 px-3 py-5">
+        <div className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-card">
+          <Sparkles className="size-4.5" aria-hidden="true" />
         </div>
-
-        <nav className="space-y-1">
-          {links.map((link) => {
-            const Icon = link.icon;
-            const active = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                  active
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <Icon className="size-4" />
-                <span>{link.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold tracking-tight text-foreground">
+            SocialAgent
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {user?.email || "AI content studio"}
+          </p>
+        </div>
       </div>
 
-      <div className="border-t border-border pt-4">
+      {/* Nav */}
+      <nav className="flex-1 space-y-6 overflow-y-auto px-3 pb-4" aria-label="Main">
+        {NAV_SECTIONS.map((section) => (
+          <div key={section.label}>
+            <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+              {section.label}
+            </p>
+            <div className="space-y-0.5">
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(pathname, item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onNavigate}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      active
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <Icon
+                      className="size-4 shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span className="truncate">{item.label}</span>
+                    {active && (
+                      <span
+                        className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary"
+                        aria-hidden="true"
+                      />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      {/* Footer */}
+      <div className="border-t border-sidebar-border p-3">
         <button
           onClick={logout}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <LogOut className="size-4" />
+          <LogOut className="size-4 shrink-0" aria-hidden="true" />
           <span>Logout</span>
         </button>
       </div>
@@ -67,14 +130,41 @@ export function Sidebar() {
   );
 }
 
-export function MobileSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
-  if (!open) return null;
+export function Sidebar() {
+  return <SidebarContent />;
+}
+
+export function MobileSidebar({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   return (
-    <div className="fixed inset-0 z-50 flex bg-black/50 lg:hidden">
-      <div className="w-64 bg-sidebar border-r border-sidebar-border">
-        <Sidebar />
-      </div>
-      <div className="flex-1" onClick={onClose} />
-    </div>
+    <Drawer.Root open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
+      <Drawer.Portal>
+        <Drawer.Backdrop
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm lg:hidden data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 transition-opacity duration-200"
+        />
+        <Drawer.Popup
+          className="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-sidebar text-sidebar-foreground shadow-lift lg:hidden data-[ending-style]:translate-x-[-100%] data-[starting-style]:translate-x-[-100%] transition-transform duration-300 ease-out"
+        >
+          <div className="flex h-full flex-col">
+            <div className="flex items-center justify-end p-2">
+              <Drawer.Close
+                aria-label="Close navigation"
+                className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <X className="size-4" aria-hidden="true" />
+              </Drawer.Close>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <SidebarContent onNavigate={onClose} />
+            </div>
+          </div>
+        </Drawer.Popup>
+      </Drawer.Portal>
+    </Drawer.Root>
   );
 }

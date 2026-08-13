@@ -48,7 +48,7 @@ export default function ContentPage() {
         actions={
           <Link
             href="/create"
-            className="inline-flex h-8 items-center gap-1.5 rounded-md bg-foreground px-3.5 text-sm font-medium text-background transition-opacity hover:opacity-90"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-medium text-primary-foreground shadow-soft transition-all hover:opacity-90 active:translate-y-px"
           >
             <PenLine className="size-4" aria-hidden="true" />
             New generation
@@ -70,7 +70,7 @@ export default function ContentPage() {
           <Skeleton className="h-20 w-full" />
         </div>
       ) : generations && generations.length > 0 ? (
-        <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+        <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card shadow-soft">
           {generations.map((gen) => {
             const rec = recommendedCandidate(gen);
             return (
@@ -80,7 +80,7 @@ export default function ContentPage() {
                   className="group flex flex-col gap-3 px-4 py-4 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex min-w-0 items-start gap-3">
-                    <PlatformIcon platform={gen.platform} size="sm" className="mt-0.5" />
+                    <PlatformIcon platform={gen.platform} size="sm" />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-foreground">
                         {gen.topic}
@@ -103,7 +103,10 @@ export default function ContentPage() {
                     <span className="capitalize">{gen.platform}</span>
                     <span aria-hidden="true">·</span>
                     <span>{timeAgo(gen.created_at)}</span>
-                    <ArrowRight className="size-3.5 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
+                    <ArrowRight
+                      className="size-3.5 opacity-0 transition-opacity group-hover:opacity-100"
+                      aria-hidden="true"
+                    />
                   </div>
                 </Link>
               </li>
@@ -118,7 +121,7 @@ export default function ContentPage() {
           action={
             <Link
               href="/create"
-              className="inline-flex h-8 items-center gap-1.5 rounded-md bg-foreground px-3.5 text-sm font-medium text-background transition-opacity hover:opacity-90"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
             >
               <PenLine className="size-4" aria-hidden="true" />
               Create content

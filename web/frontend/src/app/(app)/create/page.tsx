@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Sparkles, Wand2, Loader2 } from "lucide-react";
+import { Sparkles, Wand2, Loader2, CheckCircle2 } from "lucide-react";
 import {
   generateContent,
   createPostFromCandidate,
@@ -34,7 +34,7 @@ const OBJECTIVES = [
 ];
 
 function fieldClasses() {
-  return "h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30";
+  return "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30";
 }
 
 function CreateWorkspace() {
@@ -94,20 +94,18 @@ function CreateWorkspace() {
   return (
     <div className="animate-rise">
       <PageHeader
-        title="Create content"
-        description="Describe a post idea and the agent drafts three ranked candidates."
+        title="AI Studio"
+        description="Describe a post idea and the agent drafts three ranked candidates for you."
       />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         {/* Form */}
         <form
           onSubmit={handleGenerate}
-          className="space-y-5 self-start rounded-xl border border-border bg-card p-5 lg:sticky lg:top-8"
+          className="space-y-5 self-start rounded-xl border border-border bg-card p-5 shadow-soft lg:sticky lg:top-20"
         >
           <fieldset>
-            <legend className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Platform
-            </legend>
+            <legend className="mb-2.5 text-label">Platform</legend>
             <div className="grid grid-cols-2 gap-2">
               {PLATFORMS.map((p) => (
                 <button
@@ -116,9 +114,9 @@ function CreateWorkspace() {
                   onClick={() => setPlatform(p.id)}
                   aria-pressed={platform === p.id}
                   className={cn(
-                    "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors",
+                    "flex h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors",
                     platform === p.id
-                      ? "border-ring/40 bg-accent text-foreground"
+                      ? "border-ring/40 bg-accent text-accent-foreground shadow-soft"
                       : "border-border bg-background text-muted-foreground hover:border-input hover:text-foreground"
                   )}
                 >
@@ -132,7 +130,7 @@ function CreateWorkspace() {
           <div className="space-y-1.5">
             <label
               htmlFor="topic"
-              className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+              className="text-label"
             >
               Topic
             </label>
@@ -143,35 +141,58 @@ function CreateWorkspace() {
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="e.g. Five AI strategies SaaS founders are using to grow this year"
-              className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label
-              htmlFor="objective"
-              className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
-            >
-              Objective
-            </label>
-            <select
-              id="objective"
-              value={objective}
-              onChange={(e) => setObjective(e.target.value)}
-              className={fieldClasses()}
-            >
-              {OBJECTIVES.map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
-              ))}
-            </select>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label
+                htmlFor="objective"
+                className="text-label"
+              >
+                Objective
+              </label>
+              <select
+                id="objective"
+                value={objective}
+                onChange={(e) => setObjective(e.target.value)}
+                className={fieldClasses()}
+              >
+                {OBJECTIVES.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label
+                htmlFor="tone"
+                className="text-label"
+              >
+                Tone
+              </label>
+              <select
+                id="tone"
+                value={tone}
+                onChange={(e) => setTone(e.target.value)}
+                className={fieldClasses()}
+              >
+                {TONES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="space-y-1.5">
             <label
               htmlFor="audience"
-              className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+              className="text-label"
             >
               Audience
             </label>
@@ -185,31 +206,10 @@ function CreateWorkspace() {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label
-              htmlFor="tone"
-              className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
-            >
-              Tone
-            </label>
-            <select
-              id="tone"
-              value={tone}
-              onChange={(e) => setTone(e.target.value)}
-              className={fieldClasses()}
-            >
-              {TONES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <button
             type="submit"
             disabled={status === "loading" || !topic.trim()}
-            className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-foreground text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-60"
+            className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-primary text-sm font-medium text-primary-foreground shadow-soft transition-all hover:opacity-90 disabled:pointer-events-none disabled:opacity-60 active:translate-y-px"
           >
             {status === "loading" ? (
               <>
@@ -228,7 +228,7 @@ function CreateWorkspace() {
         {/* Results */}
         <div className="min-w-0">
           {status === "idle" && (
-            <div className="lg:sticky lg:top-8">
+            <div className="lg:sticky lg:top-20">
               <EmptyState
                 icon={Sparkles}
                 title="Ready when you are"
@@ -239,11 +239,11 @@ function CreateWorkspace() {
 
           {status === "loading" && (
             <div className="space-y-4" aria-busy="true">
-              <div className="rounded-xl border border-border bg-card p-5">
+              <div className="rounded-xl border border-border bg-card p-5 shadow-soft">
                 <div className="flex items-center gap-3">
                   <span className="relative flex size-2.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ring opacity-40" />
-                    <span className="relative inline-flex size-2.5 rounded-full bg-ring" />
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-40" />
+                    <span className="relative inline-flex size-2.5 rounded-full bg-primary" />
                   </span>
                   <div>
                     <p className="text-sm font-medium text-foreground">
@@ -282,7 +282,7 @@ function CreateWorkspace() {
 
           {status === "done" && result && (
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-xs text-muted-foreground shadow-soft">
                 <span className="inline-flex items-center gap-1.5 font-medium capitalize text-foreground">
                   <PlatformIcon platform={result.platform} size="sm" />
                   {result.platform}
@@ -290,7 +290,10 @@ function CreateWorkspace() {
                 <span aria-hidden="true">·</span>
                 <span className="line-clamp-1">{result.topic}</span>
                 <span aria-hidden="true">·</span>
-                <span>{result.candidates.length} candidates ranked</span>
+                <span className="inline-flex items-center gap-1">
+                  <CheckCircle2 className="size-3 text-emerald-500" aria-hidden="true" />
+                  {result.candidates.length} candidates ranked
+                </span>
               </div>
 
               <div className="space-y-4">

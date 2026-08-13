@@ -29,6 +29,22 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
+function errorMessage(err: unknown, fallback: string): string {
+  if (typeof err === "object" && err !== null && "response" in err) {
+    const response = (err as { response?: { data?: unknown } }).response;
+    if (
+      response &&
+      typeof response.data === "object" &&
+      response.data !== null &&
+      "detail" in response.data
+    ) {
+      const detail = (response.data as { detail?: unknown }).detail;
+      if (typeof detail === "string") return detail;
+    }
+  }
+  return err instanceof Error ? err.message : fallback;
+}
+
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
@@ -44,7 +60,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      setLoading(true);
       setError(null);
       // Fetch current user and connected social accounts
       const [userRes, accountsRes] = await Promise.all([
@@ -53,23 +68,55 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       ]);
       setUser(userRes.data);
       setSocialAccounts(accountsRes.data);
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err.message || "Failed to load session");
+    } catch (err: unknown) {
+      setError(errorMessage(err, "Failed to load session"));
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    refreshUser();
-  }, [refreshUser]);
+    let cancelled = false;
+
+    const loadSession = async () => {
+      const token = getAccessToken();
+      if (!token) {
+        if (!cancelled) {
+          setUser(null);
+          setSocialAccounts([]);
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const [userRes, accountsRes] = await Promise.all([
+          api.get<User>("/auth/me").catch(() => ({ data: { id: "", email: "", name: "User" } })),
+          api.get<SocialAccount[]>("/social-accounts"),
+        ]);
+        if (cancelled) return;
+        setUser(userRes.data);
+        setSocialAccounts(accountsRes.data);
+      } catch (err: unknown) {
+        if (!cancelled) setError(errorMessage(err, "Failed to load session"));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void loadSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const disconnectAccount = async (platform: string) => {
     try {
       await api.delete(`/social-accounts/${platform}`);
       setSocialAccounts((prev) => prev.filter((acc) => acc.platform !== platform));
-    } catch (err: any) {
-      throw new Error(err?.response?.data?.detail || "Failed to disconnect account");
+    } catch (err: unknown) {
+      throw new Error(errorMessage(err, "Failed to disconnect account"));
     }
   };
 

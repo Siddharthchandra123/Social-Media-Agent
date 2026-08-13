@@ -54,7 +54,7 @@ export function PlatformAccountCard({
 
         {isConnected ? (
           <div className="flex shrink-0 items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[oklch(0.44_0.09_145)] dark:text-[oklch(0.72_0.09_145)]">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-success">
               <CheckCircle2 className="size-3.5" aria-hidden="true" />
               Connected
             </span>
@@ -126,7 +126,7 @@ export function PlatformAccountCard({
 
       <div className="flex items-center justify-between gap-2 border-t border-border pt-4">
         {isConnected ? (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[oklch(0.44_0.09_145)] dark:text-[oklch(0.72_0.09_145)]">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-success">
             <CheckCircle2 className="size-3.5" aria-hidden="true" />
             Connected
           </span>

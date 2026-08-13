@@ -11,17 +11,15 @@ import {
   Clock,
   FileText,
   CheckCircle2,
-  Send,
   Layers,
   AlertTriangle,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   fetchGenerations,
   fetchPosts,
   GenerationResponse,
   PostResponse,
-  API_BASE_URL,
-  getAccessToken,
 } from "@/lib/api";
 import { useUser } from "@/state/user-context";
 import { recommendedCandidate, timeAgo } from "@/lib/format";
@@ -31,33 +29,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PlatformIcon } from "@/components/platform-icon";
 import { StatCard } from "@/components/ui/stat-card";
-import { PlatformAccountCard } from "@/components/platform-account-card";
 
 const PLATFORM_CARDS: {
   id: "linkedin" | "facebook" | "instagram" | "x";
-  description: string;
+  name: string;
   connectAvailable: boolean;
 }[] = [
-  {
-    id: "linkedin",
-    description: "Professional updates to your profile.",
-    connectAvailable: true,
-  },
-  {
-    id: "facebook",
-    description: "Posts to your Facebook Pages.",
-    connectAvailable: true,
-  },
-  {
-    id: "instagram",
-    description: "Feed posts to your Business account.",
-    connectAvailable: true,
-  },
-  {
-    id: "x",
-    description: "Short-form posts (coming soon).",
-    connectAvailable: false,
-  },
+  { id: "linkedin", name: "LinkedIn", connectAvailable: true },
+  { id: "facebook", name: "Facebook", connectAvailable: true },
+  { id: "instagram", name: "Instagram", connectAvailable: true },
+  { id: "x", name: "X", connectAvailable: false },
 ];
 
 function greeting(): string {
@@ -69,12 +50,11 @@ function greeting(): string {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, socialAccounts, disconnectAccount } = useUser();
+  const { user, socialAccounts } = useUser();
   const [generations, setGenerations] = useState<GenerationResponse[] | null>(null);
   const [posts, setPosts] = useState<PostResponse[] | null>(null);
   const [error, setError] = useState(false);
   const [topic, setTopic] = useState("");
-  const [disconnecting, setDisconnecting] = useState<string | null>(null);
 
   const load = async () => {
     try {
@@ -133,25 +113,14 @@ export default function DashboardPage() {
     router.push(`/create${query}`);
   };
 
-  const handleConnect = (platform: string) => {
-    const token = getAccessToken();
-    const query = token ? `?token=${encodeURIComponent(token)}` : "";
-    window.location.assign(`${API_BASE_URL}/auth/${platform}${query}`);
-  };
-
-  const handleDisconnect = async (platform: string) => {
-    if (!confirm(`Are you sure you want to disconnect ${platform}?`)) return;
-    try {
-      setDisconnecting(platform);
-      await disconnectAccount(platform);
-    } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to disconnect");
-    } finally {
-      setDisconnecting(null);
-    }
-  };
-
   const firstName = user?.name?.split(" ")[0] || "Creator";
+
+  const ledgerCells = [
+    { label: "Drafts", value: counts.drafts },
+    { label: "Approved", value: counts.approved },
+    { label: "Scheduled", value: counts.scheduled },
+    { label: "Published", value: counts.published },
+  ];
 
   return (
     <div className="animate-rise">
@@ -228,7 +197,7 @@ export default function DashboardPage() {
           retry={load}
         />
       ) : (
-        <div className="space-y-10 sm:space-y-12">
+        <div className="space-y-8 sm:space-y-10">
           {/* ================= NUMBERS ================= */}
           <section className="grid grid-cols-2 gap-x-4 gap-y-6 rounded-lg border border-border bg-card px-5 py-6 sm:grid-cols-4 sm:px-6 lg:px-8">
             <StatCard
@@ -259,8 +228,9 @@ export default function DashboardPage() {
 
           {/* ================= CONNECTED PRESENCE ================= */}
           <section>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-section-title">
+            <div className="mb-2.5 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-section-title">
+                <span className="mark-accent" aria-hidden="true" />
                 Connected presence
               </h2>
               <Link
@@ -272,37 +242,59 @@ export default function DashboardPage() {
               </Link>
             </div>
 
-            <div className="divide-y divide-border rounded-lg border border-border bg-card sm:grid sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4">
-              {PLATFORM_CARDS.map((p, i) => (
-                <div
-                  key={p.id}
-                  className={
-                    "px-5 py-4 sm:px-4 lg:px-5 " +
-                    (i % 2 === 1
-                      ? "sm:border-l sm:border-border lg:border-l"
-                      : "")
-                  }
-                >
-                  <PlatformAccountCard
-                    platform={p.id}
-                    description={p.description}
-                    account={connectedMap.get(p.id)}
-                    connectAvailable={p.connectAvailable}
-                    disconnecting={disconnecting === p.id}
-                    onConnect={() => handleConnect(p.id)}
-                    onDisconnect={() => handleDisconnect(p.id)}
-                    compact
-                  />
-                </div>
-              ))}
+            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4">
+              {PLATFORM_CARDS.map((p) => {
+                const account = connectedMap.get(p.id);
+                const active = account?.status === "active";
+                return (
+                  <Link
+                    key={p.id}
+                    href="/accounts"
+                    title={
+                      active
+                        ? `${p.name} is connected`
+                        : p.connectAvailable
+                          ? `Connect ${p.name}`
+                          : `${p.name} is coming soon`
+                    }
+                    className="flex min-w-0 flex-col gap-2.5 bg-card px-3.5 py-3.5 transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                  >
+                    <div className="flex items-center justify-between">
+                      <PlatformIcon platform={p.id} size="sm" />
+                      <span
+                        className={cn(
+                          "size-1.5 shrink-0 rounded-full",
+                          active ? "bg-success" : "bg-muted-foreground/35"
+                        )}
+                        aria-hidden="true"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {p.name}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {active
+                          ? "Connected"
+                          : p.connectAvailable
+                            ? "Not connected"
+                            : "Coming soon"}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </section>
 
-          <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
-            {/* ================= PUBLISHING ================= */}
+          <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
+            {/* ================= PUBLISHING DESK ================= */}
             <section>
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-section-title">Publishing desk</h2>
+              <div className="mb-2.5 flex items-center justify-between">
+                <h2 className="flex items-center gap-2 text-section-title">
+                  <span className="mark-accent" aria-hidden="true" />
+                  Publishing desk
+                </h2>
                 <Link
                   href="/posts"
                   className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-accent-foreground"
@@ -312,79 +304,69 @@ export default function DashboardPage() {
                 </Link>
               </div>
 
-              {loading ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-24 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                </div>
-              ) : nextUp ? (
-                <div className="rounded-lg border border-border bg-card p-5">
-                  <p className="text-label">Next up</p>
-                  <div className="mt-3 flex items-start gap-3">
+              <div className="overflow-hidden rounded-lg border border-border bg-card">
+                {loading ? (
+                  <div className="space-y-3 p-4">
+                    <Skeleton className="h-14 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                ) : nextUp ? (
+                  <div className="flex items-center gap-3 border-b border-border px-4 py-3.5">
                     <PlatformIcon platform={nextUp.platform} size="sm" />
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-medium leading-snug text-foreground">
-                          {nextUp.hook}
-                        </p>
-                        <StatusBadge status={nextUp.status} />
-                      </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {nextUp.hook}
+                      </p>
                       {nextUp.scheduled_at && (
-                        <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Clock className="size-3.5" aria-hidden="true" />
-                          {new Date(nextUp.scheduled_at).toLocaleString()}
+                        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Clock className="size-3.5 shrink-0" aria-hidden="true" />
+                          <span className="truncate">
+                            Next up · {new Date(nextUp.scheduled_at).toLocaleString()}
+                          </span>
                         </p>
                       )}
                     </div>
+                    <StatusBadge status={nextUp.status} className="shrink-0" />
                   </div>
-                </div>
-              ) : (
-                <EmptyState
-                  compact
-                  icon={Send}
-                  title="Nothing scheduled"
-                  description="Approve a draft or schedule a post to see it here."
-                />
-              )}
-
-              <dl className="mt-4 divide-y divide-border rounded-lg border border-border bg-card">
-                {[
-                  { label: "Drafts awaiting approval", value: counts.drafts, icon: FileText },
-                  { label: "Approved, ready to publish", value: counts.approved, icon: CheckCircle2 },
-                  { label: "Scheduled", value: counts.scheduled, icon: Clock },
-                  { label: "Published", value: counts.published, icon: Send },
-                ].map((row) => (
-                  <div
-                    key={row.label}
-                    className="flex items-center justify-between px-5 py-2.5"
-                  >
-                    <dt className="flex items-center gap-2.5 text-xs text-muted-foreground">
-                      <row.icon className="size-3.5" aria-hidden="true" />
-                      {row.label}
-                    </dt>
-                    <dd className="font-display text-[15px] font-semibold tabular-nums text-foreground">
-                      {row.value}
-                    </dd>
-                  </div>
-                ))}
-                {counts.failed > 0 && (
-                  <div className="flex items-center justify-between bg-destructive/5 px-5 py-2.5">
-                    <dt className="flex items-center gap-2.5 text-xs font-medium text-destructive">
-                      <AlertTriangle className="size-3.5" aria-hidden="true" />
-                      Failed — review needed
-                    </dt>
-                    <dd className="font-display text-[15px] font-semibold tabular-nums text-destructive">
-                      {counts.failed}
-                    </dd>
+                ) : (
+                  <div className="border-b border-border px-4 py-3.5 text-xs text-muted-foreground">
+                    Nothing scheduled — approve a draft to queue it.
                   </div>
                 )}
-              </dl>
+
+                <div className="grid grid-cols-2 gap-px bg-border sm:grid-cols-4">
+                  {ledgerCells.map((cell) => (
+                    <div key={cell.label} className="bg-card px-4 py-3.5">
+                      <p className="text-label">{cell.label}</p>
+                      <p className="stat-figure mt-1.5">{cell.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {counts.failed > 0 && (
+                  <Link
+                    href="/posts"
+                    className="flex items-center justify-between bg-destructive/5 px-4 py-2.5 transition-colors hover:bg-destructive/10"
+                  >
+                    <span className="flex items-center gap-2.5 text-xs font-medium text-destructive">
+                      <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
+                      Failed — review needed
+                    </span>
+                    <span className="font-display text-[15px] font-semibold tabular-nums text-destructive">
+                      {counts.failed}
+                    </span>
+                  </Link>
+                )}
+              </div>
             </section>
 
             {/* ================= RECENT ACTIVITY ================= */}
             <section>
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-section-title">Recent activity</h2>
+              <div className="mb-2.5 flex items-center justify-between">
+                <h2 className="flex items-center gap-2 text-section-title">
+                  <span className="mark-accent" aria-hidden="true" />
+                  Recent activity
+                </h2>
                 <Link
                   href="/content"
                   className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-accent-foreground"
@@ -396,9 +378,9 @@ export default function DashboardPage() {
 
               {loading ? (
                 <div className="space-y-3">
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-14 w-full" />
+                  <Skeleton className="h-14 w-full" />
+                  <Skeleton className="h-14 w-full" />
                 </div>
               ) : generations && generations.length > 0 ? (
                 <ul className="divide-y divide-border rounded-lg border border-border bg-card">
@@ -408,9 +390,9 @@ export default function DashboardPage() {
                       <li key={gen.id}>
                         <Link
                           href={`/content/${gen.id}`}
-                          className="group flex items-start gap-3 px-5 py-3.5 transition-colors hover:bg-muted/50"
+                          className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 sm:px-5"
                         >
-                          <span className="mt-0.5 shrink-0">
+                          <span className="shrink-0">
                             <PlatformIcon platform={gen.platform} size="sm" />
                           </span>
                           <div className="min-w-0 flex-1">

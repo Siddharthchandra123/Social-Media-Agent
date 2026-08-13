@@ -8,13 +8,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen bg-background">
+      <div
+        className="pointer-events-none absolute inset-0 bg-app-atmosphere"
+        aria-hidden="true"
+      />
+
       <MobileSidebar
         open={mobileNavOpen}
         onClose={() => setMobileNavOpen(false)}
       />
 
-      <div className="min-h-screen lg:pl-64">
+      <div className="relative min-h-screen lg:pl-64">
         <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-sidebar-border bg-sidebar lg:block">
           <Sidebar />
         </aside>

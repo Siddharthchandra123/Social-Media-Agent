@@ -27,7 +27,7 @@ function stars(totalScore: number) {
           className={cn(
             "size-3.5",
             i < filled
-              ? "fill-current text-[oklch(0.6_0.11_55)] dark:text-[oklch(0.75_0.1_55)]"
+              ? "fill-current text-warning"
               : "text-muted-foreground/40"
           )}
           aria-hidden="true"
@@ -105,7 +105,7 @@ export function CandidateCard({
           <div>
             {recommended ? (
               <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                <Award className="size-3.5 text-[oklch(0.6_0.11_55)] dark:text-[oklch(0.75_0.1_55)]" aria-hidden="true" />
+                <Award className="size-3.5 text-warning" aria-hidden="true" />
                 Recommended
               </p>
             ) : (
@@ -225,7 +225,7 @@ export function CandidateCard({
             className={cn(
               "inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-60",
               used
-                ? "bg-[oklch(0.55_0.09_145/0.12)] text-[oklch(0.42_0.09_145)] ring-1 ring-inset ring-[oklch(0.55_0.09_145/0.3)] dark:text-[oklch(0.72_0.09_145)]"
+                ? "bg-success/12 text-success ring-1 ring-inset ring-success/30"
                 : "bg-primary text-primary-foreground shadow-soft hover:opacity-90 active:translate-y-px"
             )}
           >

@@ -31,6 +31,10 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-olive: var(--olive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -59,121 +63,135 @@
 }
 
 /*
- * SOCIAL AGENT — Editorial workspace
- * -----------------------------------
- * Visual direction: modern editorial x digital product x social workspace.
+ * SOCIAL AGENT — Editorial workspace, third pass
+ * -----------------------------------------------
+ * Typography: Fraunces (display) + Commissioner (UI).
  *
- * Typography: Fraunces (display serif, for identity moments) paired with
- * Commissioner (UI sans, for everything read or operated).
+ * LIGHT — "warm paper": a tactile editorial surface. Cream paper page,
+ * cleaner paper surfaces, ink text, umber secondary text, one muted
+ * terracotta accent used through composition (markers, rules, washes)
+ * rather than as decoration.
  *
- * Color: warm ivory paper + warm ink + deep wine. One brand accent,
- * used deliberately — never as decoration.
+ * DARK — "ink": an atmospheric night studio, deliberately not black.
+ * Layered warm charcoal with a deep olive-forest undertone, copper-lit
+ * terracotta accent, ivory type, stone secondary text. Surfaces separate
+ * by lightness, not shadows.
  *
- * Light is a "premium publication" surface. Dark is an independently
- * art-directed "editorial night studio": warm graphite, hairline
- * borders, quiet surfaces. They are related, not inverted.
+ * Semantic accents (success / warning / info / olive) are restrained
+ * indicators for statuses and metadata — never the dominant voice.
  */
 :root {
-  --background: oklch(0.972 0.006 78);
-  --foreground: oklch(0.252 0.016 45);
+  --background: oklch(0.958 0.011 78);
+  --foreground: oklch(0.25 0.022 50);
 
-  --card: oklch(0.99 0.005 78);
-  --card-foreground: oklch(0.252 0.016 45);
+  --card: oklch(0.988 0.007 80);
+  --card-foreground: oklch(0.25 0.022 50);
 
-  --popover: oklch(0.995 0.004 78);
-  --popover-foreground: oklch(0.252 0.016 45);
+  --popover: oklch(0.99 0.006 80);
+  --popover-foreground: oklch(0.25 0.022 50);
 
-  --primary: oklch(0.44 0.09 24);
-  --primary-foreground: oklch(0.975 0.01 70);
+  --primary: oklch(0.47 0.12 38);
+  --primary-foreground: oklch(0.975 0.012 75);
 
-  --secondary: oklch(0.94 0.008 78);
-  --secondary-foreground: oklch(0.36 0.02 45);
+  --secondary: oklch(0.925 0.012 78);
+  --secondary-foreground: oklch(0.35 0.02 50);
 
-  --muted: oklch(0.946 0.007 78);
-  --muted-foreground: oklch(0.49 0.018 45);
+  --muted: oklch(0.928 0.012 78);
+  --muted-foreground: oklch(0.45 0.026 55);
 
-  --accent: oklch(0.932 0.018 24);
-  --accent-foreground: oklch(0.4 0.09 24);
+  --accent: oklch(0.905 0.028 40);
+  --accent-foreground: oklch(0.4 0.11 38);
 
-  --destructive: oklch(0.56 0.17 25);
-  --border: oklch(0.875 0.012 78);
-  --input: oklch(0.87 0.012 78);
-  --ring: oklch(0.52 0.1 24);
+  --destructive: oklch(0.53 0.16 24);
+  --success: oklch(0.5 0.1 150);
+  --warning: oklch(0.6 0.12 65);
+  --info: oklch(0.52 0.08 245);
+  --olive: oklch(0.5 0.08 110);
 
-  --chart-1: oklch(0.5 0.1 24);
-  --chart-2: oklch(0.55 0.09 145);
-  --chart-3: oklch(0.6 0.11 55);
-  --chart-4: oklch(0.55 0.06 220);
-  --chart-5: oklch(0.58 0.07 320);
+  --border: oklch(0.865 0.015 78);
+  --input: oklch(0.86 0.015 78);
+  --ring: oklch(0.55 0.12 40);
+
+  --chart-1: oklch(0.5 0.12 38);
+  --chart-2: oklch(0.5 0.08 110);
+  --chart-3: oklch(0.6 0.12 65);
+  --chart-4: oklch(0.55 0.06 240);
+  --chart-5: oklch(0.55 0.09 330);
 
   --radius: 0.5rem;
 
-  --shadow-soft: 0 1px 2px oklch(0.25 0.02 45 / 0.05), 0 1px 3px oklch(0.25 0.02 45 / 0.04);
-  --shadow-card: 0 1px 2px oklch(0.25 0.02 45 / 0.05), 0 6px 18px oklch(0.25 0.02 45 / 0.05);
-  --shadow-lift: 0 2px 4px oklch(0.25 0.02 45 / 0.06), 0 14px 32px oklch(0.25 0.02 45 / 0.09);
-  --shadow-dialog: 0 8px 20px oklch(0.25 0.02 45 / 0.1), 0 32px 80px oklch(0.25 0.02 45 / 0.16);
+  --shadow-soft: 0 1px 2px oklch(0.35 0.02 50 / 0.05), 0 1px 3px oklch(0.35 0.02 50 / 0.04);
+  --shadow-card: 0 1px 2px oklch(0.35 0.02 50 / 0.05), 0 6px 18px oklch(0.35 0.02 50 / 0.05);
+  --shadow-lift: 0 2px 4px oklch(0.35 0.02 50 / 0.06), 0 14px 32px oklch(0.35 0.02 50 / 0.09);
+  --shadow-dialog: 0 8px 20px oklch(0.35 0.02 50 / 0.1), 0 32px 80px oklch(0.35 0.02 50 / 0.16);
 
-  --sidebar: oklch(0.968 0.007 78);
-  --sidebar-foreground: oklch(0.28 0.016 45);
-  --sidebar-primary: oklch(0.44 0.09 24);
-  --sidebar-primary-foreground: oklch(0.975 0.01 70);
-  --sidebar-accent: oklch(0.932 0.018 24);
-  --sidebar-accent-foreground: oklch(0.4 0.09 24);
-  --sidebar-border: oklch(0.875 0.012 78);
-  --sidebar-ring: oklch(0.52 0.1 24);
+  --sidebar: oklch(0.952 0.011 78);
+  --sidebar-foreground: oklch(0.28 0.02 50);
+  --sidebar-primary: oklch(0.47 0.12 38);
+  --sidebar-primary-foreground: oklch(0.975 0.012 75);
+  --sidebar-accent: oklch(0.905 0.028 40);
+  --sidebar-accent-foreground: oklch(0.4 0.11 38);
+  --sidebar-border: oklch(0.865 0.015 78);
+  --sidebar-ring: oklch(0.55 0.12 40);
 }
 
 /*
- * Dark — editorial night studio.
- * Warm graphite surfaces, paper-warm type, wine held back to interactive
- * moments. Shadows are almost absent; separation comes from tone.
+ * Dark — "ink". Atmospheric, layered, warm.
+ * Page is deep warm charcoal with an olive-forest undertone; each
+ * surface lifts by lightness. Copper terracotta only at interactive
+ * moments. This is its own environment, not an inverted light theme.
  */
 .dark {
-  --background: oklch(0.157 0.008 45);
-  --foreground: oklch(0.925 0.012 75);
+  --background: oklch(0.17 0.012 95);
+  --foreground: oklch(0.925 0.016 80);
 
-  --card: oklch(0.192 0.009 45);
-  --card-foreground: oklch(0.925 0.012 75);
+  --card: oklch(0.205 0.013 95);
+  --card-foreground: oklch(0.925 0.016 80);
 
-  --popover: oklch(0.212 0.01 45);
-  --popover-foreground: oklch(0.925 0.012 75);
+  --popover: oklch(0.23 0.014 95);
+  --popover-foreground: oklch(0.925 0.016 80);
 
-  --primary: oklch(0.63 0.11 25);
-  --primary-foreground: oklch(0.16 0.01 40);
+  --primary: oklch(0.67 0.11 45);
+  --primary-foreground: oklch(0.18 0.02 50);
 
-  --secondary: oklch(0.23 0.01 45);
-  --secondary-foreground: oklch(0.9 0.01 75);
+  --secondary: oklch(0.25 0.014 95);
+  --secondary-foreground: oklch(0.9 0.015 80);
 
-  --muted: oklch(0.226 0.009 45);
-  --muted-foreground: oklch(0.67 0.014 70);
+  --muted: oklch(0.235 0.013 95);
+  --muted-foreground: oklch(0.65 0.02 85);
 
-  --accent: oklch(0.272 0.028 25);
-  --accent-foreground: oklch(0.88 0.035 25);
+  --accent: oklch(0.285 0.03 45);
+  --accent-foreground: oklch(0.87 0.04 45);
 
-  --destructive: oklch(0.66 0.16 22);
-  --border: oklch(0.93 0.01 75 / 0.09);
-  --input: oklch(0.93 0.01 75 / 0.13);
-  --ring: oklch(0.62 0.11 25);
+  --destructive: oklch(0.67 0.15 25);
+  --success: oklch(0.66 0.1 150);
+  --warning: oklch(0.72 0.11 70);
+  --info: oklch(0.68 0.07 245);
+  --olive: oklch(0.66 0.08 110);
 
-  --chart-1: oklch(0.65 0.11 25);
-  --chart-2: oklch(0.66 0.09 145);
-  --chart-3: oklch(0.7 0.1 55);
-  --chart-4: oklch(0.64 0.06 220);
-  --chart-5: oklch(0.66 0.07 320);
+  --border: oklch(0.94 0.02 85 / 0.1);
+  --input: oklch(0.94 0.02 85 / 0.15);
+  --ring: oklch(0.65 0.1 45);
+
+  --chart-1: oklch(0.65 0.11 45);
+  --chart-2: oklch(0.66 0.08 110);
+  --chart-3: oklch(0.72 0.11 70);
+  --chart-4: oklch(0.64 0.06 240);
+  --chart-5: oklch(0.64 0.09 330);
 
   --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.25);
   --shadow-card: 0 1px 2px oklch(0 0 0 / 0.3), 0 6px 18px oklch(0 0 0 / 0.18);
   --shadow-lift: 0 2px 6px oklch(0 0 0 / 0.35), 0 14px 32px oklch(0 0 0 / 0.25);
   --shadow-dialog: 0 8px 24px oklch(0 0 0 / 0.5), 0 32px 80px oklch(0 0 0 / 0.6);
 
-  --sidebar: oklch(0.17 0.009 45);
-  --sidebar-foreground: oklch(0.9 0.01 75);
-  --sidebar-primary: oklch(0.63 0.11 25);
-  --sidebar-primary-foreground: oklch(0.16 0.01 40);
-  --sidebar-accent: oklch(0.26 0.026 25);
-  --sidebar-accent-foreground: oklch(0.88 0.035 25);
-  --sidebar-border: oklch(0.93 0.01 75 / 0.08);
-  --sidebar-ring: oklch(0.62 0.11 25);
+  --sidebar: oklch(0.185 0.012 95);
+  --sidebar-foreground: oklch(0.9 0.015 80);
+  --sidebar-primary: oklch(0.67 0.11 45);
+  --sidebar-primary-foreground: oklch(0.18 0.02 50);
+  --sidebar-accent: oklch(0.27 0.028 45);
+  --sidebar-accent-foreground: oklch(0.87 0.04 45);
+  --sidebar-border: oklch(0.94 0.02 85 / 0.08);
+  --sidebar-ring: oklch(0.65 0.1 45);
 }
 
 @layer base {
@@ -199,7 +217,7 @@
   }
 
   ::selection {
-    background-color: oklch(0.5 0.09 24 / 0.22);
+    background-color: oklch(0.55 0.12 40 / 0.25);
   }
 
   h1,
@@ -218,9 +236,7 @@
   }
 }
 
-/* ------- typography hierarchy -------
-   Fraunces carries identity moments only: page titles, hero statements,
-   large figures. Commissioner carries all operational text. */
+/* ------- typography hierarchy ------- */
 .text-display {
   font-family: var(--font-display);
   font-weight: 600;
@@ -258,7 +274,6 @@
   color: var(--muted-foreground);
 }
 
-/* Large editorial figures for statistics */
 .stat-figure {
   font-family: var(--font-display);
   font-weight: 600;
@@ -272,7 +287,7 @@
 /* ------- scrollbars ------- */
 * {
   scrollbar-width: thin;
-  scrollbar-color: oklch(0.25 0.02 45 / 0.18) transparent;
+  scrollbar-color: oklch(0.35 0.02 50 / 0.18) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -282,7 +297,7 @@
 
 *::-webkit-scrollbar-thumb {
   border-radius: 9999px;
-  background-color: oklch(0.25 0.02 45 / 0.18);
+  background-color: oklch(0.35 0.02 50 / 0.18);
 }
 
 *::-webkit-scrollbar-track {
@@ -348,7 +363,6 @@
   animation: scale-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* stagger helper for lists */
 .stagger > * {
   animation: rise 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -360,26 +374,37 @@
 .stagger > *:nth-child(5) { animation-delay: 0.14s; }
 .stagger > *:nth-child(6) { animation-delay: 0.17s; }
 
-/* ------- decorative surface -------
-   A warm, restrained wash and a faint paper grain. Both are barely
-   perceptible — texture, not decoration. */
+/* ------- atmosphere -------
+   Layered faint radial washes + paper grain, applied as one canvas
+   treatment. Barely perceptible: felt rather than seen. */
+.bg-app-atmosphere {
+  background-image:
+    radial-gradient(80rem 40rem at 115% -10%, oklch(0.5 0.12 38 / 0.06), transparent 62%),
+    radial-gradient(60rem 30rem at -15% 30%, oklch(0.5 0.08 110 / 0.04), transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.045'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.dark .bg-app-atmosphere {
+  background-image:
+    radial-gradient(80rem 40rem at 115% -10%, oklch(0.67 0.11 45 / 0.08), transparent 62%),
+    radial-gradient(60rem 30rem at -15% 30%, oklch(0.66 0.08 110 / 0.045), transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.05'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Standalone wash (no grain) for small areas */
 .bg-app-wash {
   background:
-    radial-gradient(70rem 32rem at 115% -10%, oklch(0.5 0.09 24 / 0.07), transparent 62%),
-    radial-gradient(55rem 28rem at -15% 25%, oklch(0.55 0.05 55 / 0.05), transparent 60%);
+    radial-gradient(70rem 32rem at 115% -10%, oklch(0.5 0.12 38 / 0.07), transparent 62%),
+    radial-gradient(55rem 28rem at -15% 25%, oklch(0.5 0.08 110 / 0.05), transparent 60%);
 }
 
 .dark .bg-app-wash {
   background:
-    radial-gradient(70rem 32rem at 115% -10%, oklch(0.63 0.1 25 / 0.1), transparent 62%),
-    radial-gradient(55rem 28rem at -15% 25%, oklch(0.6 0.05 60 / 0.05), transparent 60%);
+    radial-gradient(70rem 32rem at 115% -10%, oklch(0.67 0.11 45 / 0.1), transparent 62%),
+    radial-gradient(55rem 28rem at -15% 25%, oklch(0.66 0.08 110 / 0.05), transparent 60%);
 }
 
-.bg-app-grain {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.035'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/* A hairline divider with a small typographic ornament — used sparingly */
+/* A hairline divider with a small typographic ornament */
 .ornament-rule {
   display: flex;
   align-items: center;
@@ -393,6 +418,17 @@
   height: 1px;
   flex: 1;
   background: var(--border);
+}
+
+/* Small editorial marker — a rotated terracotta square used before
+   section titles. Color through composition, not decoration. */
+.mark-accent {
+  display: inline-block;
+  width: 0.375rem;
+  height: 0.375rem;
+  transform: rotate(45deg);
+  border-radius: 0.0625rem;
+  background: var(--primary);
 }
 
 @media (prefers-reduced-motion: reduce) {

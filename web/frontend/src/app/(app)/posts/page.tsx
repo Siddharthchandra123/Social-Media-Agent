@@ -186,7 +186,7 @@ export default function PostPipelinePage() {
           className={cn(
             "mb-4 flex items-center justify-between rounded-md border px-4 py-2.5 text-sm",
             actionMessage.kind === "success"
-              ? "border-[oklch(0.55_0.09_145/0.35)] bg-[oklch(0.55_0.09_145/0.1)] text-[oklch(0.42_0.09_145)] dark:text-[oklch(0.72_0.09_145)]"
+              ? "border-success/35 bg-success/10 text-success"
               : "border-destructive/30 bg-destructive/10 text-destructive"
           )}
         >
@@ -393,7 +393,7 @@ export default function PostPipelinePage() {
                 )}
 
                 {post.status === "published" && (
-                  <p className="py-1 text-right text-xs text-[oklch(0.44_0.09_145)] dark:text-[oklch(0.72_0.09_145)]">
+                  <p className="py-1 text-right text-xs text-success">
                     {post.external_post_id
                       ? "Live on your connected account"
                       : "Published successfully"}

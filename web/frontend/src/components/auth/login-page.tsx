@@ -48,8 +48,7 @@ export function LoginPage() {
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
       {/* Editorial backdrop: warm wash + faint paper grain */}
-      <div className="absolute inset-0 bg-app-wash" aria-hidden="true" />
-      <div className="absolute inset-0 bg-app-grain" aria-hidden="true" />
+      <div className="absolute inset-0 bg-app-atmosphere" aria-hidden="true" />
 
       {/* Top bar */}
       <div className="relative z-10 flex items-center justify-between px-4 py-4 sm:px-6">

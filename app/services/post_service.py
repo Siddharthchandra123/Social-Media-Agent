@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from app.db.models.social_account import SocialAccount
 from app.publishing.linkedin import LinkedInPublisher
+from app.publishing.facebook import FacebookPublisher
 from app.config import settings
 from app.security.encryption import token_encryptor
 from sqlalchemy import select
@@ -226,17 +227,17 @@ class PostService:
                 "Post must be approved before publishing"
             )
 
-        if post.platform != "linkedin":
+        if post.platform not in ["linkedin", "facebook"]:
             raise InvalidPostStateError(
                 f"Publishing for {post.platform} "
                 "is not implemented yet"
             )
 
-        # Find connected LinkedIn account
+        # Find connected account
         result = await self.db.execute(
             select(SocialAccount).where(
                 SocialAccount.user_id == user_id,
-                SocialAccount.platform == "linkedin",
+                SocialAccount.platform == post.platform,
                 SocialAccount.status == "active",
             )
         )
@@ -247,28 +248,34 @@ class PostService:
 
         if not social_account:
             raise InvalidPostStateError(
-                "No active LinkedIn account connected. "
-                "Connect LinkedIn first."
+                f"No active {post.platform} account connected. "
+                f"Connect {post.platform} first."
             )
 
         if not social_account.access_token:
             raise InvalidPostStateError(
-                "Connected LinkedIn account has "
-                "no access token."
+                "Connected account has no access token."
             )
 
         if not social_account.platform_user_id:
             raise InvalidPostStateError(
-                "Connected LinkedIn account has "
-                "no LinkedIn member ID."
+                "Connected account has no platform ID."
             )
 
-        publisher = LinkedInPublisher(
-            access_token=token_encryptor.decrypt(social_account.access_token) or social_account.access_token,
-            platform_user_id=(
-                social_account.platform_user_id
-            ),
-        )
+        decrypted_token = token_encryptor.decrypt(social_account.access_token) or social_account.access_token
+
+        if post.platform == "linkedin":
+            publisher = LinkedInPublisher(
+                access_token=decrypted_token,
+                platform_user_id=social_account.platform_user_id,
+            )
+        elif post.platform == "facebook":
+            publisher = FacebookPublisher(
+                page_access_token=decrypted_token,
+                page_id=social_account.platform_user_id,
+            )
+        else:
+            raise InvalidPostStateError("Unsupported platform")
 
         post.status = "publishing"
 

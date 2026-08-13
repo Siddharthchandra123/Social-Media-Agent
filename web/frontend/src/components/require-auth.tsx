@@ -17,7 +17,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   if (authed === null) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-soft">
+        <div className="flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-soft">
           <Sparkles className="size-5" aria-hidden="true" />
         </div>
         <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />

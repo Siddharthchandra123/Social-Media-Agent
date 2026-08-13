@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { PlugZap } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PlatformAccountCard } from "@/components/platform-account-card";
 import { useUser } from "@/state/user-context";
@@ -72,21 +71,13 @@ export default function AccountsPage() {
         description="Manage your social platform connections and publishing permissions."
       />
 
-      <section className="mb-6 flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-soft sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <PlugZap className="size-5" aria-hidden="true" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold tracking-tight text-foreground">
-              {connectedCount} of 3 platforms connected
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Connections are permanent — you won&apos;t need to reconnect after
-              logging out.
-            </p>
-          </div>
-        </div>
+      <section className="mb-8 flex items-center gap-4 border-b border-border pb-5">
+        <p className="text-label">Connections</p>
+        <div className="h-1 flex-1" aria-hidden="true" />
+        <p className="stat-figure text-accent-foreground">
+          {connectedCount}
+          <span className="text-base font-medium text-muted-foreground">/3</span>
+        </p>
       </section>
 
       <div className="grid gap-4 sm:grid-cols-2">

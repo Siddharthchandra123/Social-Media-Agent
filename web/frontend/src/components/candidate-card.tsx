@@ -27,7 +27,7 @@ function stars(totalScore: number) {
           className={cn(
             "size-3.5",
             i < filled
-              ? "fill-current text-amber-400"
+              ? "fill-current text-[oklch(0.6_0.11_55)] dark:text-[oklch(0.75_0.1_55)]"
               : "text-muted-foreground/40"
           )}
           aria-hidden="true"
@@ -86,17 +86,15 @@ export function CandidateCard({
   return (
     <article
       className={cn(
-        "flex flex-col gap-4 rounded-xl border bg-card p-5 shadow-soft transition-all hover:shadow-card",
-        recommended
-          ? "border-ring/40"
-          : "border-border"
+        "flex flex-col gap-4 rounded-lg border bg-card p-5 transition-colors",
+        recommended ? "border-ring/40" : "border-border"
       )}
     >
       <header className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <span
             className={cn(
-              "flex size-8 shrink-0 items-center justify-center rounded-lg text-sm font-semibold",
+              "flex size-8 shrink-0 items-center justify-center rounded-md font-display text-sm font-semibold",
               recommended
                 ? "bg-primary/10 text-primary"
                 : "bg-muted text-muted-foreground"
@@ -107,7 +105,7 @@ export function CandidateCard({
           <div>
             {recommended ? (
               <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                <Award className="size-3.5 text-amber-400" aria-hidden="true" />
+                <Award className="size-3.5 text-[oklch(0.6_0.11_55)] dark:text-[oklch(0.75_0.1_55)]" aria-hidden="true" />
                 Recommended
               </p>
             ) : (
@@ -119,7 +117,7 @@ export function CandidateCard({
           </div>
         </div>
         <div className="text-right">
-          <p className="font-mono text-lg font-semibold leading-none">
+          <p className="font-display text-lg font-semibold leading-none tabular-nums">
             {Math.round(candidate.total_score)}
             <span className="text-xs font-normal text-muted-foreground">/100</span>
           </p>
@@ -176,7 +174,7 @@ export function CandidateCard({
         )}
       </div>
 
-      <div className="mt-auto rounded-lg border border-border bg-muted/30">
+      <div className="mt-auto rounded-md border border-border bg-muted/30">
         <button
           type="button"
           onClick={() => setShowEvaluation((v) => !v)}
@@ -199,7 +197,7 @@ export function CandidateCard({
                   className="rounded-md border border-border bg-card px-2.5 py-2"
                 >
                   <p className="text-[11px] text-muted-foreground">{label}</p>
-                  <p className="font-mono text-sm font-semibold">
+                  <p className="font-display text-sm font-semibold tabular-nums">
                     {candidate[key] as number}
                     <span className="text-[10px] font-normal text-muted-foreground">
                       /100
@@ -225,9 +223,9 @@ export function CandidateCard({
             onClick={handleUse}
             disabled={using || used}
             className={cn(
-              "inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-60",
+              "inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-60",
               used
-                ? "bg-emerald-500/10 text-emerald-600 ring-1 ring-inset ring-emerald-500/30 dark:text-emerald-400"
+                ? "bg-[oklch(0.55_0.09_145/0.12)] text-[oklch(0.42_0.09_145)] ring-1 ring-inset ring-[oklch(0.55_0.09_145/0.3)] dark:text-[oklch(0.72_0.09_145)]"
                 : "bg-primary text-primary-foreground shadow-soft hover:opacity-90 active:translate-y-px"
             )}
           >

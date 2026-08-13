@@ -46,7 +46,7 @@ export default function SettingsPage() {
 
       <div className="max-w-2xl space-y-6">
         {/* Appearance */}
-        <section className="rounded-xl border border-border bg-card p-6 shadow-soft">
+        <section className="rounded-lg border border-border bg-card p-6">
           <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold">
             <Moon className="size-4 text-muted-foreground" aria-hidden="true" />
             Appearance
@@ -58,13 +58,13 @@ export default function SettingsPage() {
               onClick={() => setTheme("light")}
               aria-pressed={theme === "light"}
               className={cn(
-                "flex flex-col items-start gap-2.5 rounded-xl border p-4 text-left transition-colors",
+                "flex flex-col items-start gap-2.5 rounded-md border p-4 text-left transition-colors",
                 theme === "light"
                   ? "border-ring/50 bg-accent shadow-soft"
                   : "border-border bg-background hover:border-input"
               )}
             >
-              <span className="flex size-9 items-center justify-center rounded-lg bg-background text-foreground ring-1 ring-inset ring-border">
+              <span className="flex size-9 items-center justify-center rounded-md bg-background text-foreground ring-1 ring-inset ring-border">
                 <Sun className="size-4.5" aria-hidden="true" />
               </span>
               <span>
@@ -82,13 +82,13 @@ export default function SettingsPage() {
               onClick={() => setTheme("dark")}
               aria-pressed={theme === "dark"}
               className={cn(
-                "flex flex-col items-start gap-2.5 rounded-xl border p-4 text-left transition-colors",
+                "flex flex-col items-start gap-2.5 rounded-md border p-4 text-left transition-colors",
                 theme === "dark"
                   ? "border-ring/50 bg-accent shadow-soft"
                   : "border-border bg-background hover:border-input"
               )}
             >
-              <span className="flex size-9 items-center justify-center rounded-lg bg-foreground text-background ring-1 ring-inset ring-border">
+              <span className="flex size-9 items-center justify-center rounded-md bg-foreground text-background ring-1 ring-inset ring-border">
                 <Moon className="size-4.5" aria-hidden="true" />
               </span>
               <span>
@@ -104,7 +104,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Brand defaults */}
-        <section className="rounded-xl border border-border bg-card p-6 shadow-soft">
+        <section className="rounded-lg border border-border bg-card p-6">
           <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold">
             <Sliders className="size-4 text-muted-foreground" aria-hidden="true" />
             Default generation settings
@@ -122,7 +122,7 @@ export default function SettingsPage() {
                 id="settings-tone"
                 value={tone}
                 onChange={(e) => setTone(e.target.value)}
-                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
               >
                 {TONES.map((t) => (
                   <option key={t} value={t}>
@@ -143,7 +143,7 @@ export default function SettingsPage() {
                 id="settings-objective"
                 value={objective}
                 onChange={(e) => setObjective(e.target.value)}
-                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
               >
                 {OBJECTIVES.map((o) => (
                   <option key={o} value={o}>
@@ -166,14 +166,14 @@ export default function SettingsPage() {
                 value={audience}
                 onChange={(e) => setAudience(e.target.value)}
                 placeholder="Who is your content for?"
-                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
               />
             </div>
 
             <div className="flex items-center gap-3 pt-2">
               <button
                 type="submit"
-                className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow-soft transition-all hover:opacity-90 active:translate-y-px"
+                className="inline-flex h-10 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-soft transition-all hover:opacity-90 active:translate-y-px"
               >
                 <Save className="size-4" aria-hidden="true" />
                 Save settings
@@ -189,7 +189,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Coming soon */}
-        <section className="rounded-xl border border-dashed border-border bg-card/40 p-6">
+        <section className="rounded-lg border border-dashed border-border bg-card/40 p-6">
           <h2 className="mb-2 text-sm font-semibold">Advanced settings</h2>
           <p className="text-sm text-muted-foreground">
             Team management, API keys, and publishing automation are coming soon.

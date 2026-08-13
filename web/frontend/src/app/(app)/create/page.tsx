@@ -34,7 +34,7 @@ const OBJECTIVES = [
 ];
 
 function fieldClasses() {
-  return "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30";
+  return "h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30";
 }
 
 function CreateWorkspace() {
@@ -102,7 +102,7 @@ function CreateWorkspace() {
         {/* Form */}
         <form
           onSubmit={handleGenerate}
-          className="space-y-5 self-start rounded-xl border border-border bg-card p-5 shadow-soft lg:sticky lg:top-20"
+          className="space-y-5 self-start rounded-lg border border-border bg-card p-5 lg:sticky lg:top-20"
         >
           <fieldset>
             <legend className="mb-2.5 text-label">Platform</legend>
@@ -114,7 +114,7 @@ function CreateWorkspace() {
                   onClick={() => setPlatform(p.id)}
                   aria-pressed={platform === p.id}
                   className={cn(
-                    "flex h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors",
+                    "flex h-11 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors",
                     platform === p.id
                       ? "border-ring/40 bg-accent text-accent-foreground shadow-soft"
                       : "border-border bg-background text-muted-foreground hover:border-input hover:text-foreground"
@@ -141,7 +141,7 @@ function CreateWorkspace() {
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="e.g. Five AI strategies SaaS founders are using to grow this year"
-              className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
             />
           </div>
 
@@ -209,7 +209,7 @@ function CreateWorkspace() {
           <button
             type="submit"
             disabled={status === "loading" || !topic.trim()}
-            className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-primary text-sm font-medium text-primary-foreground shadow-soft transition-all hover:opacity-90 disabled:pointer-events-none disabled:opacity-60 active:translate-y-px"
+            className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-md bg-primary text-sm font-medium text-primary-foreground shadow-soft transition-all hover:opacity-90 disabled:pointer-events-none disabled:opacity-60 active:translate-y-px"
           >
             {status === "loading" ? (
               <>
@@ -239,7 +239,7 @@ function CreateWorkspace() {
 
           {status === "loading" && (
             <div className="space-y-4" aria-busy="true">
-              <div className="rounded-xl border border-border bg-card p-5 shadow-soft">
+              <div className="rounded-lg border border-border bg-card p-5">
                 <div className="flex items-center gap-3">
                   <span className="relative flex size-2.5">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-40" />
@@ -259,7 +259,7 @@ function CreateWorkspace() {
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
-                  className="rounded-xl border border-border bg-card p-5"
+                  className="rounded-lg border border-border bg-card p-5"
                 >
                   <Skeleton className="mb-4 h-4 w-40" />
                   <Skeleton className="mb-2 h-4 w-full" />
@@ -282,7 +282,7 @@ function CreateWorkspace() {
 
           {status === "done" && result && (
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-xs text-muted-foreground shadow-soft">
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5 font-medium capitalize text-foreground">
                   <PlatformIcon platform={result.platform} size="sm" />
                   {result.platform}

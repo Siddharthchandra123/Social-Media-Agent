@@ -34,8 +34,8 @@ export const PLATFORMS: PlatformMeta[] = [
     connectAvailable: true,
     publishAvailable: true,
     icon: LinkedinIcon,
-    tintClass: "bg-[#0a66c2]/12 text-[#0a66c2] dark:bg-[#0a66c2]/25 dark:text-[#7cb8eb]",
-    accentClass: "text-[#0a66c2] dark:text-[#7cb8eb]",
+    tintClass: "bg-[oklch(0.5_0.09_245/0.12)] text-[oklch(0.45_0.09_245)] dark:bg-[oklch(0.75_0.06_245/0.14)] dark:text-[oklch(0.75_0.06_245)]",
+    accentClass: "text-[oklch(0.45_0.09_245)] dark:text-[oklch(0.75_0.06_245)]",
   },
   {
     id: "facebook",
@@ -45,8 +45,8 @@ export const PLATFORMS: PlatformMeta[] = [
     connectAvailable: true,
     publishAvailable: true,
     icon: FacebookIcon,
-    tintClass: "bg-[#1877f2]/12 text-[#1877f2] dark:bg-[#1877f2]/25 dark:text-[#7db2f8]",
-    accentClass: "text-[#1877f2] dark:text-[#7db2f8]",
+    tintClass: "bg-[oklch(0.52_0.09_255/0.12)] text-[oklch(0.47_0.09_255)] dark:bg-[oklch(0.76_0.06_255/0.14)] dark:text-[oklch(0.76_0.06_255)]",
+    accentClass: "text-[oklch(0.47_0.09_255)] dark:text-[oklch(0.76_0.06_255)]",
   },
   {
     id: "instagram",
@@ -56,8 +56,8 @@ export const PLATFORMS: PlatformMeta[] = [
     connectAvailable: true,
     publishAvailable: true,
     icon: InstagramIcon,
-    tintClass: "bg-[#e4405f]/12 text-[#e4405f] dark:bg-[#e4405f]/25 dark:text-[#f59ab1]",
-    accentClass: "text-[#e4405f] dark:text-[#f59ab1]",
+    tintClass: "bg-[oklch(0.52_0.11_10/0.12)] text-[oklch(0.47_0.11_10)] dark:bg-[oklch(0.76_0.07_10/0.14)] dark:text-[oklch(0.78_0.07_10)]",
+    accentClass: "text-[oklch(0.47_0.11_10)] dark:text-[oklch(0.78_0.07_10)]",
   },
   {
     id: "x",

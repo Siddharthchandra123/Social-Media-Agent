@@ -10,6 +10,10 @@ interface StatCardProps {
   iconClassName?: string;
 }
 
+/*
+ * A stat is typography first: label, figure, context.
+ * No box — the surrounding layout provides structure via rules/whitespace.
+ */
 export function StatCard({
   label,
   value,
@@ -19,33 +23,20 @@ export function StatCard({
   iconClassName,
 }: StatCardProps) {
   return (
-    <div
-      className={cn(
-        "flex items-center gap-3.5 rounded-xl border border-border bg-card p-4 shadow-soft transition-shadow hover:shadow-card sm:p-5",
-        className
+    <div className={cn("min-w-0", className)}>
+      <p className="flex items-center gap-1.5 text-label">
+        <Icon
+          className={cn("size-3.5 text-muted-foreground", iconClassName)}
+          aria-hidden="true"
+        />
+        {label}
+      </p>
+      <p className="stat-figure mt-2 text-foreground">{value}</p>
+      {hint && (
+        <p className="mt-1 truncate text-xs text-muted-foreground/85">
+          {hint}
+        </p>
       )}
-    >
-      <div
-        className={cn(
-          "flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary",
-          iconClassName
-        )}
-      >
-        <Icon className="size-5" aria-hidden="true" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-2xl font-semibold leading-none tracking-tight text-foreground">
-          {value}
-        </p>
-        <p className="mt-1 truncate text-xs font-medium text-muted-foreground">
-          {label}
-        </p>
-        {hint && (
-          <p className="mt-0.5 truncate text-[11px] text-muted-foreground/80">
-            {hint}
-          </p>
-        )}
-      </div>
     </div>
   );
 }

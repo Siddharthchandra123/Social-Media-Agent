@@ -3,12 +3,12 @@ import { cn } from "@/lib/utils";
 const STATUS_STYLES: Record<string, { badge: string; dot: string }> = {
   // generation
   completed: {
-    badge: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/25 dark:text-emerald-400",
-    dot: "bg-emerald-500",
+    badge: "bg-[oklch(0.55_0.09_145/0.12)] text-[oklch(0.42_0.09_145)] dark:text-[oklch(0.72_0.09_145)] ring-[oklch(0.55_0.09_145/0.25)]",
+    dot: "bg-[oklch(0.55_0.09_145)]",
   },
   processing: {
-    badge: "bg-amber-500/10 text-amber-600 ring-amber-500/25 dark:text-amber-400",
-    dot: "bg-amber-500",
+    badge: "bg-[oklch(0.62_0.1_55/0.12)] text-[oklch(0.5_0.1_55)] dark:text-[oklch(0.75_0.1_55)] ring-[oklch(0.62_0.1_55/0.25)]",
+    dot: "bg-[oklch(0.62_0.1_55)]",
   },
   failed: {
     badge: "bg-destructive/10 text-destructive ring-destructive/25",
@@ -16,24 +16,24 @@ const STATUS_STYLES: Record<string, { badge: string; dot: string }> = {
   },
   // post lifecycle
   draft: {
-    badge: "bg-zinc-500/10 text-zinc-600 ring-zinc-500/25 dark:text-zinc-400",
-    dot: "bg-zinc-500",
+    badge: "bg-muted text-muted-foreground ring-border",
+    dot: "bg-muted-foreground",
   },
   approved: {
-    badge: "bg-sky-500/10 text-sky-600 ring-sky-500/25 dark:text-sky-400",
-    dot: "bg-sky-500",
+    badge: "bg-[oklch(0.44_0.09_24/0.1)] text-[oklch(0.42_0.09_24)] dark:text-[oklch(0.78_0.08_25)] ring-[oklch(0.44_0.09_24/0.25)]",
+    dot: "bg-[oklch(0.5_0.1_24)]",
   },
   scheduled: {
-    badge: "bg-indigo-500/10 text-indigo-600 ring-indigo-500/25 dark:text-indigo-400",
-    dot: "bg-indigo-500",
+    badge: "bg-[oklch(0.62_0.1_55/0.12)] text-[oklch(0.5_0.1_55)] dark:text-[oklch(0.75_0.1_55)] ring-[oklch(0.62_0.1_55/0.25)]",
+    dot: "bg-[oklch(0.62_0.1_55)]",
   },
   publishing: {
-    badge: "bg-amber-500/10 text-amber-600 ring-amber-500/25 dark:text-amber-400",
-    dot: "bg-amber-500",
+    badge: "bg-[oklch(0.62_0.1_55/0.12)] text-[oklch(0.5_0.1_55)] dark:text-[oklch(0.75_0.1_55)] ring-[oklch(0.62_0.1_55/0.25)]",
+    dot: "bg-[oklch(0.62_0.1_55)]",
   },
   published: {
-    badge: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/25 dark:text-emerald-400",
-    dot: "bg-emerald-500",
+    badge: "bg-[oklch(0.55_0.09_145/0.12)] text-[oklch(0.42_0.09_145)] dark:text-[oklch(0.72_0.09_145)] ring-[oklch(0.55_0.09_145/0.25)]",
+    dot: "bg-[oklch(0.55_0.09_145)]",
   },
 };
 

@@ -54,7 +54,7 @@ export function PlatformAccountCard({
 
         {isConnected ? (
           <div className="flex shrink-0 items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[oklch(0.44_0.09_145)] dark:text-[oklch(0.72_0.09_145)]">
               <CheckCircle2 className="size-3.5" aria-hidden="true" />
               Connected
             </span>
@@ -63,7 +63,7 @@ export function PlatformAccountCard({
               onClick={onDisconnect}
               disabled={disconnecting}
               aria-label={`Disconnect ${meta.label}`}
-              className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+              className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
             >
               {disconnecting ? (
                 <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
@@ -93,7 +93,7 @@ export function PlatformAccountCard({
   return (
     <div
       className={cn(
-        "group flex flex-col justify-between gap-4 rounded-xl border bg-card p-5 shadow-soft transition-all hover:shadow-card",
+        "group flex flex-col justify-between gap-4 rounded-lg border bg-card p-5 transition-colors hover:border-input",
         isConnected
           ? "border-border"
           : connectAvailable
@@ -126,7 +126,7 @@ export function PlatformAccountCard({
 
       <div className="flex items-center justify-between gap-2 border-t border-border pt-4">
         {isConnected ? (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[oklch(0.44_0.09_145)] dark:text-[oklch(0.72_0.09_145)]">
             <CheckCircle2 className="size-3.5" aria-hidden="true" />
             Connected
           </span>
@@ -144,7 +144,7 @@ export function PlatformAccountCard({
             type="button"
             onClick={onDisconnect}
             disabled={disconnecting}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
           >
             {disconnecting ? (
               <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
@@ -157,7 +157,7 @@ export function PlatformAccountCard({
           <button
             type="button"
             onClick={onConnect}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-xs font-medium text-primary-foreground shadow-soft transition-all hover:opacity-90 active:translate-y-px"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3.5 text-xs font-medium text-primary-foreground shadow-soft transition-all hover:opacity-90 active:translate-y-px"
           >
             Connect
             <ArrowRight className="size-3.5" aria-hidden="true" />

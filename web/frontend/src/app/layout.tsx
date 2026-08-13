@@ -1,11 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Commissioner, Fraunces, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/state/theme-provider";
 import "./globals.css";
 
-const sans = Inter({
+const display = Fraunces({
+  variable: "--font-display",
+  subsets: ["latin"],
+  axes: ["opsz", "SOFT", "WONK"],
+});
+
+const sans = Commissioner({
   variable: "--font-sans",
   subsets: ["latin"],
+  axes: ["slnt"],
 });
 
 const mono = JetBrains_Mono({
@@ -24,8 +31,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0f0f14" },
-    { media: "(prefers-color-scheme: light)", color: "#fbfbfd" },
+    { media: "(prefers-color-scheme: dark)", color: "#16130f" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f2ec" },
   ],
 };
 
@@ -47,7 +54,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
+    <html
+      lang="en"
+      className={`${display.variable} ${sans.variable} ${mono.variable}`}
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>

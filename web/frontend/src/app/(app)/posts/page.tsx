@@ -60,7 +60,6 @@ export default function PostPipelinePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // Scheduling Modal state
   const [schedulingPostId, setSchedulingPostId] = useState<string | null>(null);
   const [scheduleDatetime, setScheduleDatetime] = useState("");
   const [actionMessage, setActionMessage] = useState<{
@@ -124,7 +123,6 @@ export default function PostPipelinePage() {
       await publishPostNow(postId);
       showMessage("Publishing post...");
 
-      // Poll until backend finishes publishing.
       for (let i = 0; i < 10; i++) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         const data = await fetchPosts();
@@ -174,7 +172,7 @@ export default function PostPipelinePage() {
         actions={
           <Link
             href="/create"
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-medium text-primary-foreground shadow-soft transition-all hover:opacity-90 active:translate-y-px"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3.5 text-sm font-medium text-primary-foreground shadow-soft transition-all hover:opacity-90 active:translate-y-px"
           >
             <Sparkles className="size-4" aria-hidden="true" />
             New generation
@@ -186,9 +184,9 @@ export default function PostPipelinePage() {
         <div
           role="status"
           className={cn(
-            "mb-4 flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm",
+            "mb-4 flex items-center justify-between rounded-md border px-4 py-2.5 text-sm",
             actionMessage.kind === "success"
-              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              ? "border-[oklch(0.55_0.09_145/0.35)] bg-[oklch(0.55_0.09_145/0.1)] text-[oklch(0.42_0.09_145)] dark:text-[oklch(0.72_0.09_145)]"
               : "border-destructive/30 bg-destructive/10 text-destructive"
           )}
         >
@@ -230,9 +228,9 @@ export default function PostPipelinePage() {
               aria-selected={isActive}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium whitespace-nowrap transition-colors",
+                "inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap transition-colors",
                 isActive
-                  ? "bg-accent text-accent-foreground shadow-soft"
+                  ? "bg-accent text-accent-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
@@ -252,10 +250,10 @@ export default function PostPipelinePage() {
           retry={loadPostsData}
         />
       ) : loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Skeleton className="h-52 w-full" />
-          <Skeleton className="h-52 w-full" />
-          <Skeleton className="h-52 w-full" />
+        <div className="space-y-3">
+          <Skeleton className="h-28 w-full" />
+          <Skeleton className="h-28 w-full" />
+          <Skeleton className="h-28 w-full" />
         </div>
       ) : filteredPosts.length === 0 ? (
         <EmptyState
@@ -265,7 +263,7 @@ export default function PostPipelinePage() {
           action={
             <Link
               href="/create"
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
             >
               <Sparkles className="size-4" aria-hidden="true" />
               Create content
@@ -273,90 +271,73 @@ export default function PostPipelinePage() {
           }
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="divide-y divide-border rounded-lg border border-border bg-card">
           {filteredPosts.map((post) => (
-            <div
-              key={post.id}
-              className={cn(
-                "flex flex-col justify-between rounded-xl border bg-card p-5 shadow-soft transition-all hover:shadow-card",
-                post.status === "failed" && "border-destructive/30"
-              )}
-            >
-              <div className="space-y-4">
-                {/* Card header */}
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                    <PlatformIcon platform={post.platform} size="sm" />
-                    <span className="capitalize">{post.platform}</span>
-                  </span>
-                  <StatusBadge status={post.status} />
-                </div>
-
-                {/* Post content */}
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-foreground">{post.hook}</p>
-                  <p className="line-clamp-3 text-xs leading-relaxed text-muted-foreground">
-                    {post.caption}
-                  </p>
-                  {post.cta && (
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground/80">CTA:</span>{" "}
-                      {post.cta}
-                    </p>
-                  )}
-                  {post.hashtags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {post.hashtags.map((h, i) => (
-                        <span
-                          key={i}
-                          className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
-                        >
-                          {h}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Failure reason */}
-                {post.status === "failed" && (
-                  <div className="rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-                    <p className="flex items-center gap-1.5 font-medium">
-                      <AlertTriangle className="size-3.5" aria-hidden="true" />
-                      Couldn&apos;t publish
-                    </p>
-                    <p className="mt-1 text-muted-foreground">
-                      {friendlyError(post.failure_reason)}
-                    </p>
-                  </div>
-                )}
-
-                {/* Metadata */}
-                {post.scheduled_at && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="size-3.5" aria-hidden="true" />
-                    <span>
-                      Scheduled: {new Date(post.scheduled_at).toLocaleString()}
-                    </span>
-                  </div>
-                )}
-                {post.published_at && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <CheckCircle2 className="size-3.5" aria-hidden="true" />
-                    <span>
-                      Published: {new Date(post.published_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
+            <li key={post.id} className="px-4 py-4 sm:px-6 sm:py-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                  <PlatformIcon platform={post.platform} size="sm" />
+                  <span className="capitalize">{post.platform}</span>
+                </span>
+                <StatusBadge status={post.status} />
               </div>
 
+              <p className="mt-3 text-sm font-medium leading-snug text-foreground">
+                {post.hook}
+              </p>
+              <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                {post.caption}
+              </p>
+
+              {post.hashtags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {post.hashtags.map((h, i) => (
+                    <span
+                      key={i}
+                      className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+                    >
+                      {h}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {(post.scheduled_at || post.published_at) && (
+                <div className="mt-2.5 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                  {post.scheduled_at && (
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="size-3.5" aria-hidden="true" />
+                      Scheduled: {new Date(post.scheduled_at).toLocaleString()}
+                    </span>
+                  )}
+                  {post.published_at && (
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle2 className="size-3.5" aria-hidden="true" />
+                      Published: {new Date(post.published_at).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {post.status === "failed" && (
+                <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/5 px-3 py-2 text-xs">
+                  <p className="flex items-center gap-1.5 font-medium text-destructive">
+                    <AlertTriangle className="size-3.5" aria-hidden="true" />
+                    Couldn&apos;t publish
+                  </p>
+                  <p className="mt-1 text-muted-foreground">
+                    {friendlyError(post.failure_reason)}
+                  </p>
+                </div>
+              )}
+
               {/* Actions */}
-              <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
+              <div className="mt-4 flex flex-col-reverse gap-2 border-t border-border pt-3.5 sm:flex-row sm:justify-end">
                 {post.status === "draft" && (
                   <button
                     onClick={() => handleApprove(post.id)}
                     disabled={actionLoading === post.id}
-                    className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-500/10 text-sm font-medium text-emerald-600 ring-1 ring-inset ring-emerald-500/30 transition-colors hover:bg-emerald-500/20 disabled:opacity-50 dark:text-emerald-400"
+                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-soft transition-opacity hover:opacity-90 disabled:opacity-50"
                   >
                     {actionLoading === post.id ? (
                       <Loader2 className="size-4 animate-spin" aria-hidden="true" />
@@ -368,7 +349,7 @@ export default function PostPipelinePage() {
                 )}
 
                 {post.status === "approved" && (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <button
                       onClick={() => {
                         setSchedulingPostId(post.id);
@@ -376,7 +357,7 @@ export default function PostPipelinePage() {
                           new Date(Date.now() + 86400000).toISOString().slice(0, 16)
                         );
                       }}
-                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-border bg-background text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
                     >
                       <Calendar className="size-3.5" aria-hidden="true" />
                       Schedule
@@ -384,7 +365,7 @@ export default function PostPipelinePage() {
                     <button
                       onClick={() => handlePublishNow(post.id)}
                       disabled={actionLoading === post.id}
-                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-primary text-sm font-medium text-primary-foreground shadow-soft transition-opacity hover:opacity-90 disabled:opacity-50"
+                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-soft transition-opacity hover:opacity-90 disabled:opacity-50"
                     >
                       {actionLoading === post.id ? (
                         <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
@@ -400,7 +381,7 @@ export default function PostPipelinePage() {
                   <button
                     onClick={() => handlePublishNow(post.id)}
                     disabled={actionLoading === post.id}
-                    className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-background text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
                   >
                     {actionLoading === post.id ? (
                       <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
@@ -412,7 +393,7 @@ export default function PostPipelinePage() {
                 )}
 
                 {post.status === "published" && (
-                  <p className="py-1 text-center text-xs text-emerald-600 dark:text-emerald-400">
+                  <p className="py-1 text-right text-xs text-[oklch(0.44_0.09_145)] dark:text-[oklch(0.72_0.09_145)]">
                     {post.external_post_id
                       ? "Live on your connected account"
                       : "Published successfully"}
@@ -423,16 +404,16 @@ export default function PostPipelinePage() {
                   <button
                     onClick={() => handleApprove(post.id)}
                     disabled={actionLoading === post.id}
-                    className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-background text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
                   >
                     <RefreshCcw className="size-3.5" aria-hidden="true" />
                     Reset to approved
                   </button>
                 )}
               </div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       {/* Schedule Post Modal */}
@@ -456,7 +437,7 @@ export default function PostPipelinePage() {
               required
               value={scheduleDatetime}
               onChange={(e) => setScheduleDatetime(e.target.value)}
-              className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
             />
           </div>
 
@@ -464,13 +445,13 @@ export default function PostPipelinePage() {
             <button
               type="button"
               onClick={() => setSchedulingPostId(null)}
-              className="inline-flex h-9 items-center rounded-lg px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="inline-flex h-9 items-center rounded-md px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow-soft transition-all hover:opacity-90 active:translate-y-px"
+              className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-soft transition-all hover:opacity-90 active:translate-y-px"
             >
               Confirm
             </button>

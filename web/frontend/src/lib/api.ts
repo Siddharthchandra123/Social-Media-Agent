@@ -39,10 +39,10 @@ api.interceptors.response.use(
       removeAccessToken();
 
       if (typeof window !== "undefined") {
-        // Authentication is OAuth-only: the Accounts screen is the
-        // sign-in hub. Avoid an infinite redirect by sending the user
-        // there rather than to the root redirect.
-        window.location.href = "/accounts";
+        // Authentication surfaces live on every app route via RequireAuth,
+        // which renders the login experience when no token is present.
+        // Send the user to the dashboard landing so that experience appears.
+        window.location.href = "/dashboard";
       }
     }
 

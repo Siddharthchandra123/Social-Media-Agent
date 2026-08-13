@@ -70,7 +70,7 @@ export default function ContentPage() {
           <Skeleton className="h-20 w-full" />
         </div>
       ) : generations && generations.length > 0 ? (
-        <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card shadow-soft">
+        <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-soft">
           {generations.map((gen) => {
             const rec = recommendedCandidate(gen);
             return (

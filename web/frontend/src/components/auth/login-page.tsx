@@ -47,16 +47,17 @@ export function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
-      {/* Aurora backdrop */}
-      <div className="absolute inset-0 bg-app-aurora" aria-hidden="true" />
+      {/* Editorial backdrop: warm wash + faint paper grain */}
+      <div className="absolute inset-0 bg-app-wash" aria-hidden="true" />
+      <div className="absolute inset-0 bg-app-grain" aria-hidden="true" />
 
       {/* Top bar */}
       <div className="relative z-10 flex items-center justify-between px-4 py-4 sm:px-6">
         <div className="flex items-center gap-2.5">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-soft">
+          <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-soft">
             <Sparkles className="size-4" aria-hidden="true" />
           </div>
-          <span className="text-sm font-semibold tracking-tight text-foreground">
+          <span className="font-display text-[17px] font-semibold tracking-tight text-foreground">
             SocialAgent
           </span>
         </div>
@@ -65,19 +66,19 @@ export function LoginPage() {
 
       <div className="relative z-10 flex flex-1 items-center justify-center p-4">
         <div className="w-full max-w-md animate-rise">
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-dialog sm:p-8">
+          <div className="rounded-lg border border-border bg-card px-6 py-8 shadow-dialog sm:px-8">
             {/* Header */}
-            <div className="mb-6 text-center">
-              <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Sparkles className="size-6" aria-hidden="true" />
-              </div>
-              <h1 className="text-xl font-semibold tracking-tight text-foreground">
-                {isSignup ? "Create your Agent account" : "Sign in to SocialAgent"}
-              </h1>
-              <p className="mt-1.5 text-sm text-muted-foreground">
+            <div className="mb-7">
+              <p className="text-label">AI content studio</p>
+              <h1 className="text-page-title mt-2 text-foreground">
                 {isSignup
-                  ? "Get started with your AI social media agent"
-                  : "Welcome back — your content studio is waiting"}
+                  ? "Begin your journal"
+                  : "Welcome back"}
+              </h1>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {isSignup
+                  ? "Create an account and start drafting, reviewing, and publishing social content."
+                  : "Sign in to your workspace — your connected accounts are waiting."}
               </p>
             </div>
 
@@ -85,7 +86,7 @@ export function LoginPage() {
             {error && (
               <div
                 role="alert"
-                className="mb-4 flex items-start gap-2.5 rounded-lg border border-destructive/25 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive"
+                className="mb-4 flex items-start gap-2.5 rounded-md border border-destructive/25 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive"
               >
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                 <span>{error}</span>
@@ -94,7 +95,7 @@ export function LoginPage() {
 
             {/* Tabs */}
             <div
-              className="mb-5 grid grid-cols-2 gap-1 rounded-lg bg-muted p-1"
+              className="mb-5 grid grid-cols-2 gap-1 rounded-md border border-border bg-muted/60 p-1"
               role="tablist"
               aria-label="Authentication mode"
             >
@@ -103,7 +104,7 @@ export function LoginPage() {
                 role="tab"
                 aria-selected={!isSignup}
                 onClick={() => setIsSignup(false)}
-                className="rounded-md py-2 text-sm font-medium transition-colors aria-selected:bg-card aria-selected:text-foreground aria-selected:shadow-soft"
+                className="rounded-[4px] py-2 text-sm font-medium transition-colors aria-selected:bg-card aria-selected:text-foreground aria-selected:shadow-soft"
               >
                 Sign in
               </button>
@@ -112,7 +113,7 @@ export function LoginPage() {
                 role="tab"
                 aria-selected={isSignup}
                 onClick={() => setIsSignup(true)}
-                className="rounded-md py-2 text-sm font-medium transition-colors aria-selected:bg-card aria-selected:text-foreground aria-selected:shadow-soft"
+                className="rounded-[4px] py-2 text-sm font-medium transition-colors aria-selected:bg-card aria-selected:text-foreground aria-selected:shadow-soft"
               >
                 Create account
               </button>
@@ -183,7 +184,11 @@ export function LoginPage() {
               </Button>
             </form>
 
-            <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground">
+            <p className="ornament-rule mt-7 text-[11px] uppercase tracking-[0.14em]">
+              Connected accounts stay linked
+            </p>
+
+            <p className="mt-3 text-center text-xs leading-relaxed text-muted-foreground">
               By continuing, you agree to SocialAgent&apos;s{" "}
               <Link href="#" className="font-medium text-foreground underline-offset-2 hover:underline">
                 Terms
@@ -192,7 +197,7 @@ export function LoginPage() {
               <Link href="#" className="font-medium text-foreground underline-offset-2 hover:underline">
                 Privacy Policy
               </Link>
-              . Your connected social accounts remain linked to your account.
+              .
             </p>
           </div>
         </div>

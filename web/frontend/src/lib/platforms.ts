@@ -34,8 +34,8 @@ export const PLATFORMS: PlatformMeta[] = [
     connectAvailable: true,
     publishAvailable: true,
     icon: LinkedinIcon,
-    tintClass: "bg-[oklch(0.5_0.09_245/0.12)] text-[oklch(0.45_0.09_245)] dark:bg-[oklch(0.75_0.06_245/0.14)] dark:text-[oklch(0.75_0.06_245)]",
-    accentClass: "text-[oklch(0.45_0.09_245)] dark:text-[oklch(0.75_0.06_245)]",
+    tintClass: "bg-[oklch(0.5_0.08_255/0.12)] text-[oklch(0.45_0.08_255)] dark:bg-[oklch(0.72_0.06_255/0.14)] dark:text-[oklch(0.72_0.06_255)]",
+    accentClass: "text-[oklch(0.45_0.08_255)] dark:text-[oklch(0.72_0.06_255)]",
   },
   {
     id: "facebook",
@@ -45,8 +45,8 @@ export const PLATFORMS: PlatformMeta[] = [
     connectAvailable: true,
     publishAvailable: true,
     icon: FacebookIcon,
-    tintClass: "bg-[oklch(0.52_0.09_255/0.12)] text-[oklch(0.47_0.09_255)] dark:bg-[oklch(0.76_0.06_255/0.14)] dark:text-[oklch(0.76_0.06_255)]",
-    accentClass: "text-[oklch(0.47_0.09_255)] dark:text-[oklch(0.76_0.06_255)]",
+    tintClass: "bg-[oklch(0.52_0.07_268/0.12)] text-[oklch(0.47_0.07_268)] dark:bg-[oklch(0.73_0.05_268/0.14)] dark:text-[oklch(0.73_0.05_268)]",
+    accentClass: "text-[oklch(0.47_0.07_268)] dark:text-[oklch(0.73_0.05_268)]",
   },
   {
     id: "instagram",
@@ -56,8 +56,8 @@ export const PLATFORMS: PlatformMeta[] = [
     connectAvailable: true,
     publishAvailable: true,
     icon: InstagramIcon,
-    tintClass: "bg-[oklch(0.52_0.11_10/0.12)] text-[oklch(0.47_0.11_10)] dark:bg-[oklch(0.76_0.07_10/0.14)] dark:text-[oklch(0.78_0.07_10)]",
-    accentClass: "text-[oklch(0.47_0.11_10)] dark:text-[oklch(0.78_0.07_10)]",
+    tintClass: "bg-[oklch(0.52_0.11_8/0.12)] text-[oklch(0.47_0.11_8)] dark:bg-[oklch(0.75_0.07_8/0.14)] dark:text-[oklch(0.75_0.07_8)]",
+    accentClass: "text-[oklch(0.47_0.11_8)] dark:text-[oklch(0.75_0.07_8)]",
   },
   {
     id: "x",

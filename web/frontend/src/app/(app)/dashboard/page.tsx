@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
+  ChevronRight,
   PenLine,
   Sparkles,
   PlugZap,
@@ -199,50 +200,58 @@ export default function DashboardPage() {
       ) : (
         <div className="space-y-8 sm:space-y-10">
           {/* ================= NUMBERS ================= */}
-          <section className="grid grid-cols-2 gap-x-4 gap-y-6 rounded-lg border border-border bg-card px-5 py-6 sm:grid-cols-4 sm:px-6 lg:px-8">
-            <StatCard
-              label="Platforms"
-              value={loading ? "—" : `${counts.connected}/3`}
-              icon={PlugZap}
-              hint="LinkedIn · Facebook · Instagram"
-            />
-            <StatCard
-              label="Drafts"
-              value={loading ? "—" : counts.drafts}
-              icon={FileText}
-              hint="Awaiting approval"
-            />
-            <StatCard
-              label="Scheduled"
-              value={loading ? "—" : counts.scheduled}
-              icon={Clock}
-              hint="In the queue"
-            />
-            <StatCard
-              label="Published"
-              value={loading ? "—" : counts.published}
-              icon={CheckCircle2}
-              hint="Lifetime posts"
-            />
+          <section className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4">
+            <div className="bg-card px-4 py-4 sm:px-5">
+              <StatCard
+                label="Platforms"
+                value={loading ? "—" : `${counts.connected}/3`}
+                icon={PlugZap}
+                hint="LinkedIn · Facebook · Instagram"
+              />
+            </div>
+            <div className="bg-card px-4 py-4 sm:px-5">
+              <StatCard
+                label="Drafts"
+                value={loading ? "—" : counts.drafts}
+                icon={FileText}
+                hint="Awaiting approval"
+              />
+            </div>
+            <div className="bg-card px-4 py-4 sm:px-5">
+              <StatCard
+                label="Scheduled"
+                value={loading ? "—" : counts.scheduled}
+                icon={Clock}
+                hint="In the queue"
+              />
+            </div>
+            <div className="bg-card px-4 py-4 sm:px-5">
+              <StatCard
+                label="Published"
+                value={loading ? "—" : counts.published}
+                icon={CheckCircle2}
+                hint="Lifetime posts"
+              />
+            </div>
           </section>
 
           {/* ================= CONNECTED PRESENCE ================= */}
           <section>
-            <div className="mb-2.5 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-section-title">
-                <span className="mark-accent" aria-hidden="true" />
-                Connected presence
+            <div className="mb-2.5 flex min-w-0 items-center justify-between gap-3">
+              <h2 className="flex min-w-0 items-center gap-2 text-section-title">
+                <span className="mark-accent shrink-0" aria-hidden="true" />
+                <span className="truncate">Connected presence</span>
               </h2>
               <Link
                 href="/accounts"
-                className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-accent-foreground"
+                className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-accent-foreground"
               >
                 Manage
                 <ArrowRight className="size-3" aria-hidden="true" />
               </Link>
             </div>
 
-            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4">
+            <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
               {PLATFORM_CARDS.map((p) => {
                 const account = connectedMap.get(p.id);
                 const active = account?.status === "active";
@@ -257,47 +266,63 @@ export default function DashboardPage() {
                           ? `Connect ${p.name}`
                           : `${p.name} is coming soon`
                     }
-                    className="flex min-w-0 flex-col gap-2.5 bg-card px-3.5 py-3.5 transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                    className="flex min-w-0 items-center gap-3 bg-card px-3.5 py-3 transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:flex-col sm:items-start sm:justify-center sm:gap-2.5 sm:px-4 sm:py-4"
                   >
-                    <div className="flex items-center justify-between">
+                    <span className="shrink-0">
                       <PlatformIcon platform={p.id} size="sm" />
-                      <span
-                        className={cn(
-                          "size-1.5 shrink-0 rounded-full",
-                          active ? "bg-success" : "bg-muted-foreground/35"
-                        )}
-                        aria-hidden="true"
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-foreground">
                         {p.name}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
+                      </span>
+                      <span className="block truncate text-xs text-muted-foreground">
                         {active
-                          ? "Connected"
+                          ? (account?.display_name ?? "Connected")
                           : p.connectAvailable
                             ? "Not connected"
                             : "Coming soon"}
-                      </p>
-                    </div>
+                      </span>
+                    </span>
+                    <span
+                      className={cn(
+                        "shrink-0 text-xs font-medium",
+                        active
+                          ? "text-success"
+                          : p.connectAvailable
+                            ? "text-primary"
+                            : "text-muted-foreground/70"
+                      )}
+                    >
+                      {active ? "Active" : p.connectAvailable ? "Connect" : "Soon"}
+                    </span>
+                    <ChevronRight
+                      className="size-4 shrink-0 text-muted-foreground/40 sm:hidden"
+                      aria-hidden="true"
+                    />
                   </Link>
                 );
               })}
             </div>
           </section>
 
-          <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
+          {/* ================= PUBLISHING + ACTIVITY ================= */}
+          {/*
+            NOTE: the explicit `grid-cols-1` below is required. Without it the
+            wrapper creates implicit `auto` grid tracks at mobile width, which
+            size to the sections' min-content (the nowrap/truncate hook line in
+            "Next up" is ~485px) and overflow the container horizontally.
+          */}
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
             {/* ================= PUBLISHING DESK ================= */}
-            <section>
-              <div className="mb-2.5 flex items-center justify-between">
-                <h2 className="flex items-center gap-2 text-section-title">
-                  <span className="mark-accent" aria-hidden="true" />
-                  Publishing desk
+            <section className="min-w-0">
+              <div className="mb-2.5 flex min-w-0 items-center justify-between gap-3">
+                <h2 className="flex min-w-0 items-center gap-2 text-section-title">
+                  <span className="mark-accent shrink-0" aria-hidden="true" />
+                  <span className="truncate">Publishing desk</span>
                 </h2>
                 <Link
                   href="/posts"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-accent-foreground"
+                  className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-accent-foreground"
                 >
                   Open publishing
                   <ArrowRight className="size-3" aria-hidden="true" />
@@ -336,7 +361,7 @@ export default function DashboardPage() {
 
                 <div className="grid grid-cols-2 gap-px bg-border sm:grid-cols-4">
                   {ledgerCells.map((cell) => (
-                    <div key={cell.label} className="bg-card px-4 py-3.5">
+                    <div key={cell.label} className="min-w-0 bg-card px-4 py-3.5">
                       <p className="text-label">{cell.label}</p>
                       <p className="stat-figure mt-1.5">{cell.value}</p>
                     </div>
@@ -346,11 +371,11 @@ export default function DashboardPage() {
                 {counts.failed > 0 && (
                   <Link
                     href="/posts"
-                    className="flex items-center justify-between bg-destructive/5 px-4 py-2.5 transition-colors hover:bg-destructive/10"
+                    className="flex items-center justify-between gap-3 bg-destructive/5 px-4 py-2.5 transition-colors hover:bg-destructive/10"
                   >
-                    <span className="flex items-center gap-2.5 text-xs font-medium text-destructive">
+                    <span className="flex min-w-0 items-center gap-2.5 text-xs font-medium text-destructive">
                       <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
-                      Failed — review needed
+                      <span className="truncate">Failed — review needed</span>
                     </span>
                     <span className="font-display text-[15px] font-semibold tabular-nums text-destructive">
                       {counts.failed}
@@ -361,15 +386,15 @@ export default function DashboardPage() {
             </section>
 
             {/* ================= RECENT ACTIVITY ================= */}
-            <section>
-              <div className="mb-2.5 flex items-center justify-between">
-                <h2 className="flex items-center gap-2 text-section-title">
-                  <span className="mark-accent" aria-hidden="true" />
-                  Recent activity
+            <section className="min-w-0">
+              <div className="mb-2.5 flex min-w-0 items-center justify-between gap-3">
+                <h2 className="flex min-w-0 items-center gap-2 text-section-title">
+                  <span className="mark-accent shrink-0" aria-hidden="true" />
+                  <span className="truncate">Recent activity</span>
                 </h2>
                 <Link
                   href="/content"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-accent-foreground"
+                  className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-accent-foreground"
                 >
                   View all
                   <ArrowRight className="size-3" aria-hidden="true" />
@@ -386,20 +411,26 @@ export default function DashboardPage() {
                 <ul className="divide-y divide-border rounded-lg border border-border bg-card">
                   {generations.map((gen) => {
                     const rec = recommendedCandidate(gen);
+                    const statusDot =
+                      gen.status === "failed"
+                        ? "bg-destructive"
+                        : gen.status === "processing"
+                          ? "bg-warning"
+                          : "bg-success";
                     return (
                       <li key={gen.id}>
                         <Link
                           href={`/content/${gen.id}`}
-                          className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 sm:px-5"
+                          className="group flex min-w-0 items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 sm:px-5"
                         >
                           <span className="shrink-0">
                             <PlatformIcon platform={gen.platform} size="sm" />
                           </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-foreground">
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium text-foreground">
                               {gen.topic}
-                            </p>
-                            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                            </span>
+                            <span className="mt-0.5 block truncate text-xs text-muted-foreground">
                               {rec ? (
                                 <>
                                   {rec.hook} · Score {rec.total_score}/100
@@ -407,9 +438,13 @@ export default function DashboardPage() {
                               ) : (
                                 "No candidates yet"
                               )}
-                            </p>
-                          </div>
-                          <span className="shrink-0 text-[11px] text-muted-foreground/80">
+                            </span>
+                          </span>
+                          <span className="flex shrink-0 items-center gap-1.5 text-[11px] text-muted-foreground/80">
+                            <span
+                              className={cn("size-1.5 rounded-full", statusDot)}
+                              aria-hidden="true"
+                            />
                             {timeAgo(gen.created_at)}
                           </span>
                         </Link>

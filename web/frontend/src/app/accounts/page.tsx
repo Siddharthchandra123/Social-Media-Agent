@@ -32,8 +32,8 @@ const PLATFORMS: {
   {
     id: "x",
     description:
-      "Connect your X account to broadcast short-form posts (coming soon).",
-    connectAvailable: false,
+      "Connect your X account to broadcast short-form posts.",
+    connectAvailable: true,
   },
 ];
 
@@ -76,7 +76,7 @@ export default function AccountsPage() {
         <div className="h-1 flex-1" aria-hidden="true" />
         <p className="stat-figure text-accent-foreground">
           {connectedCount}
-          <span className="text-base font-medium text-muted-foreground">/3</span>
+          <span className="text-base font-medium text-muted-foreground">/4</span>
         </p>
       </section>
 

@@ -1,23 +1,18 @@
 import uuid
 from datetime import datetime, timezone
 
-from datetime import datetime, timezone
-from datetime import datetime, timezone
-
-from sqlalchemy import select
-
-from app.db.models.social_account import SocialAccount
-from app.publishing.linkedin import LinkedInPublisher
-from app.publishing.facebook import FacebookPublisher
-from app.publishing.instagram import InstagramPublisher
-from app.config import settings
-from app.security.encryption import token_encryptor
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.candidate import ContentCandidate
 from app.db.models.generation import ContentGeneration
 from app.db.models.post import Post
+from app.db.models.social_account import SocialAccount
+from app.publishing.facebook import FacebookPublisher
+from app.publishing.instagram import InstagramPublisher
+from app.publishing.linkedin import LinkedInPublisher
+from app.publishing.x import XPublisher, obtain_valid_x_token
+from app.security.encryption import token_encryptor
 
 
 class PostNotFoundError(Exception):
@@ -228,7 +223,7 @@ class PostService:
                 "Post must be approved before publishing"
             )
 
-        if post.platform not in ["linkedin", "facebook", "instagram"]:
+        if post.platform not in ["linkedin", "facebook", "instagram", "x"]:
             raise InvalidPostStateError(
                 f"Publishing for {post.platform} "
                 "is not implemented yet"
@@ -279,6 +274,16 @@ class PostService:
             publisher = InstagramPublisher(
                 access_token=decrypted_token,
                 instagram_business_id=social_account.platform_user_id,
+            )
+        elif post.platform == "x":
+            valid_token = await obtain_valid_x_token(
+                self.db,
+                social_account,
+            )
+            publisher = XPublisher(
+                access_token=valid_token,
+                platform_user_id=social_account.platform_user_id,
+                username=social_account.display_name,
             )
         else:
             raise InvalidPostStateError("Unsupported platform")

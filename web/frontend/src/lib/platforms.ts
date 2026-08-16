@@ -64,11 +64,13 @@ export const PLATFORMS: PlatformMeta[] = [
     label: "X (Twitter)",
     shortLabel: "X",
     description: "Short-form posts",
-    connectAvailable: false,
-    publishAvailable: false,
+    connectAvailable: true,
+    publishAvailable: true,
     icon: TwitterIcon,
-    tintClass: "bg-muted text-muted-foreground",
-    accentClass: "text-muted-foreground",
+    tintClass:
+      "bg-[oklch(0.2_0_0/0.08)] text-[oklch(0.2_0_0)] dark:bg-[oklch(0.95_0_0/0.12)] dark:text-[oklch(0.95_0_0)]",
+    accentClass:
+      "text-[oklch(0.2_0_0)] dark:text-[oklch(0.95_0_0)]",
   },
 ];
 

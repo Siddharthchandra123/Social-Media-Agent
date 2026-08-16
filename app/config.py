@@ -47,6 +47,19 @@ class Settings(BaseSettings):
         "https://social-media-agent-uud2.onrender.com/api/v1/auth/instagram/callback"
     )
 
+    # X (Twitter) OAuth 2.0 Authorization Code with PKCE
+    # Client ID / Secret come from the X Developer Portal
+    # (https://developer.x.com -> app -> "Keys and tokens").
+    # The Client Secret is only used for the token exchange; the PKCE
+    # code_verifier is the primary proof-of-possession for public clients.
+    X_CLIENT_ID: str = ""
+    X_CLIENT_SECRET: str = ""
+    X_REDIRECT_URI: str = (
+        "https://social-media-agent-uud2.onrender.com/api/v1/auth/x/callback"
+    )
+    X_API_BASE: str = "https://api.x.com"
+    X_AUTHORIZE_URL: str = "https://x.com/i/oauth2/authorize"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

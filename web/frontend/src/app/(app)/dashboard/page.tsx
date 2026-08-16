@@ -39,7 +39,7 @@ const PLATFORM_CARDS: {
   { id: "linkedin", name: "LinkedIn", connectAvailable: true },
   { id: "facebook", name: "Facebook", connectAvailable: true },
   { id: "instagram", name: "Instagram", connectAvailable: true },
-  { id: "x", name: "X", connectAvailable: false },
+  { id: "x", name: "X", connectAvailable: true },
 ];
 
 function greeting(): string {
@@ -204,9 +204,9 @@ export default function DashboardPage() {
             <div className="bg-card px-4 py-4 sm:px-5">
               <StatCard
                 label="Platforms"
-                value={loading ? "—" : `${counts.connected}/3`}
+                value={loading ? "—" : `${counts.connected}/4`}
                 icon={PlugZap}
-                hint="LinkedIn · Facebook · Instagram"
+                hint="LinkedIn · Facebook · Instagram · X"
               />
             </div>
             <div className="bg-card px-4 py-4 sm:px-5">

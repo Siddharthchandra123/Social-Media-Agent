@@ -67,7 +67,19 @@ Return an objective short explanation for the evaluation.
 
 def build_generation_prompt(
     request: ContentGenerationRequest,
+    post_max_length: int | None = None,
 ) -> str:
+
+    length_instruction = ""
+    if post_max_length is not None:
+        length_instruction = f"""
+
+Length constraint (CRITICAL for {request.platform.value}):
+The final post — hook + caption + CTA + hashtags combined — must be
+at most {post_max_length} characters. Count characters precisely and
+make every candidate fit within this limit. Prefer trimming the caption
+and hashtags over cutting the hook or CTA.
+"""
 
     return f"""
 Create three social media post candidates.
@@ -88,7 +100,7 @@ Target audience:
 {request.audience}
 
 Generate exactly three substantially different approaches.
-"""
+{length_instruction}"""
 
 
 def build_evaluation_prompt(

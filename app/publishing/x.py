@@ -17,6 +17,7 @@ added later (e.g. `_attach_media`) without rewriting the flow.
 
 import asyncio
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 
 import httpx
@@ -37,6 +38,8 @@ USERS_ME_URL = "https://api.x.com/2/users/me"
 
 REQUIRED_SCOPES = "tweet.read users.read tweet.write offline.access"
 
+X_POST_MAX_LENGTH_KEY = "x_post_max_length"
+
 
 class XPostValidationError(Exception):
     """User-facing error for content that X will not accept."""
@@ -51,7 +54,17 @@ class XTokenRefreshError(Exception):
 
 
 class XPublishError(Exception):
-    """X rejected the publish request."""
+    """
+    X rejected the publish request.
+
+    `detected_limit` carries the post length limit parsed from X's error
+    response, when the rejection was caused by the post being too long
+    for the account/app tier.
+    """
+
+    def __init__(self, message: str, detected_limit: int | None = None):
+        super().__init__(message)
+        self.detected_limit = detected_limit
 
 
 # ---------------------------------------------------------------------------
@@ -83,7 +96,7 @@ def build_tweet_text(post: Post) -> str:
     return "\n\n".join(parts)
 
 
-def validate_tweet_text(text: str) -> None:
+def validate_tweet_text(text: str, max_length: int = MAX_TWEET_LENGTH) -> None:
     """
     Validate post text against X constraints.
 
@@ -95,11 +108,31 @@ def validate_tweet_text(text: str) -> None:
             "The post has no visible text. Add a hook, caption, or CTA "
             "before publishing to X."
         )
-    if len(text) > MAX_TWEET_LENGTH:
+    if len(text) > max_length:
         raise XPostValidationError(
             f"This post is {len(text)} characters, but X allows at most "
-            f"{MAX_TWEET_LENGTH}. Shorten the post before publishing to X."
+            f"{max_length} for this account. Shorten the post before "
+            "publishing to X."
         )
+
+
+def get_effective_x_post_limit(account) -> int:
+    """
+    Return the post length limit for an X account.
+
+    Prefers a limit detected from a previous X API rejection
+    (stored in account.platform_data), falling back to the
+    configured default.
+    """
+    if (
+        account
+        and account.platform_data
+        and isinstance(account.platform_data, dict)
+    ):
+        stored = account.platform_data.get(X_POST_MAX_LENGTH_KEY)
+        if isinstance(stored, int) and stored > 0:
+            return stored
+    return settings.X_POST_MAX_LENGTH
 
 
 # ---------------------------------------------------------------------------
@@ -238,8 +271,34 @@ async def obtain_valid_x_token(
 # Publisher
 # ---------------------------------------------------------------------------
 
-def _friendly_api_error(response: httpx.Response) -> str:
-    """Map an X API error response to a user-safe message."""
+_CHAR_LIMIT_PATTERN = re.compile(r"(\d{2,6})\s*characters?\b", re.IGNORECASE)
+
+
+def _detect_length_limit(body: dict, response: httpx.Response) -> int | None:
+    """
+    Try to extract the account's real post length limit from X's
+    rejection text (e.g. "limited to 200 characters"). X does not
+    expose the tier directly, so the error message is the source of
+    truth when a post is rejected for length.
+    """
+    if not body:
+        return None
+
+    for field in ("detail", "title"):
+        value = body.get(field)
+        if not isinstance(value, str):
+            continue
+        if "character" not in value.lower():
+            continue
+        match = _CHAR_LIMIT_PATTERN.search(value)
+        if match:
+            return int(match.group(1))
+
+    return None
+
+
+def _friendly_api_error(response: httpx.Response) -> tuple[str, int | None]:
+    """Map an X API error response to a (user-safe message, detected limit)."""
     try:
         body = response.json()
         detail = body.get("detail") or ""
@@ -247,10 +306,13 @@ def _friendly_api_error(response: httpx.Response) -> str:
     except ValueError:
         body, detail, title = {}, "", ""
 
+    detected_limit = _detect_length_limit(body, response)
+
     if response.status_code == 429:
         return (
             "X is rate-limiting requests right now. Wait a few minutes and "
-            "try again."
+            "try again.",
+            None,
         )
 
     if response.status_code in (401, 403):
@@ -261,32 +323,45 @@ def _friendly_api_error(response: httpx.Response) -> str:
             return (
                 "This X app does not have permission to post. Grant the "
                 "tweet.write scope when connecting, or ask the workspace "
-                "owner to update the X app."
+                "owner to update the X app.",
+                None,
             )
         return (
             "X rejected this request. Reconnect the X account from Connected "
-            "Accounts and try again."
+            "Accounts and try again.",
+            None,
         )
 
     if response.status_code == 400:
         message = detail or title or "invalid request"
+
+        if detected_limit:
+            return (
+                f"X limits posts to {detected_limit} characters for this "
+                f"account. Shorten the post to {detected_limit} characters "
+                "and try again.",
+                detected_limit,
+            )
+
         if any(word in message.lower() for word in ("duplicate", "already")):
             return (
                 "X flagged this post as a duplicate. Change the text and try "
-                "again."
+                "again.",
+                None,
             )
         if any(
             word in message.lower()
             for word in ("length", "too long", "character")
         ):
             return (
-                "X rejected the post because it is too long. Shorten it to "
-                f"{MAX_TWEET_LENGTH} characters or fewer."
+                "X rejected the post because it is too long. Shorten it "
+                "before trying again.",
+                None,
             )
-        return f"X rejected the post: {message}"
+        return (f"X rejected the post: {message}", None)
 
     message = detail or title or response.text[:200]
-    return f"X publishing failed: {message}"
+    return (f"X publishing failed: {message}", None)
 
 
 class XPublisher(SocialPublisher):
@@ -296,17 +371,19 @@ class XPublisher(SocialPublisher):
         access_token: str,
         platform_user_id: str,
         username: str | None = None,
+        max_post_length: int = MAX_TWEET_LENGTH,
     ):
         self.access_token = access_token
         self.platform_user_id = platform_user_id
         self.username = username
+        self.max_post_length = max_post_length
 
     async def publish(
         self,
         post: Post,
     ) -> PublishResult:
         text = build_tweet_text(post)
-        validate_tweet_text(text)
+        validate_tweet_text(text, max_length=self.max_post_length)
 
         headers = {
             "Authorization": f"Bearer {self.access_token}",
@@ -329,7 +406,8 @@ class XPublisher(SocialPublisher):
             ) from exc
 
         if response.status_code != 201:
-            raise XPublishError(_friendly_api_error(response))
+            message, detected_limit = _friendly_api_error(response)
+            raise XPublishError(message, detected_limit=detected_limit)
 
         data = response.json().get("data", {})
         external_post_id = data.get("id")

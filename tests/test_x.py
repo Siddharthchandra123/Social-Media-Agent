@@ -36,6 +36,7 @@ from app.publishing.x import (
     XTokenError,
     XTokenRefreshError,
     build_tweet_text,
+    get_effective_x_post_limit,
     obtain_valid_x_token,
     refresh_x_access_token,
     validate_tweet_text,
@@ -250,6 +251,15 @@ def test_validate_tweet_text_rejects_too_long():
     assert "characters" in str(exc.value)
 
 
+def test_validate_tweet_text_custom_limit():
+    validate_tweet_text("x" * 200, max_length=200)
+
+    with pytest.raises(XPostValidationError) as exc:
+        validate_tweet_text("x" * 201, max_length=200)
+    assert "200" in str(exc.value)
+    assert "201" in str(exc.value)
+
+
 # ---------------------------------------------------------------------------
 # XPublisher
 # ---------------------------------------------------------------------------
@@ -369,6 +379,72 @@ async def test_publish_api_unreachable(monkeypatch):
     with pytest.raises(RuntimeError) as exc:
         await XPublisher("t", "user-1").publish(make_post())
     assert "Could not connect to X" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_publish_with_custom_max_length(monkeypatch):
+    called = []
+
+    def handler(method, url, kwargs):
+        called.append(url)
+        return FakeResponse(201, {"data": {"id": "t1"}})
+
+    HANDLER["fn"] = handler
+    monkeypatch.setattr(x_module.httpx, "AsyncClient", FakeAsyncClient)
+
+    publisher = XPublisher("t", "user-1", max_post_length=200)
+
+    await publisher.publish(make_post())
+    assert called
+
+    post = make_post(hook="h" * 220)
+    with pytest.raises(XPostValidationError) as exc:
+        await publisher.publish(post)
+    assert "200" in str(exc.value)
+    assert len(called) == 1  # API never called for the too-long post
+
+
+def test_detect_length_limit_from_error():
+    from app.publishing.x import _friendly_api_error
+
+    response = FakeResponse(
+        400,
+        {
+            "title": "Unprocessable Entity",
+            "detail": "Free tier posts are limited to 200 characters",
+        },
+    )
+    message, detected_limit = _friendly_api_error(response)
+
+    assert detected_limit == 200
+    assert "200 characters" in message
+
+
+def test_no_limit_detected_on_other_errors():
+    from app.publishing.x import _friendly_api_error
+
+    response = FakeResponse(
+        400,
+        {"title": "Invalid Request", "detail": "Duplicate content"},
+    )
+    message, detected_limit = _friendly_api_error(response)
+
+    assert detected_limit is None
+    assert "duplicate" in message.lower()
+
+
+def test_get_effective_x_post_limit_prefers_stored():
+    account = SimpleNamespace(platform_data={"x_post_max_length": 200})
+    assert get_effective_x_post_limit(account) == 200
+
+
+def test_get_effective_x_post_limit_falls_back_to_default():
+    assert get_effective_x_post_limit(None) == 280
+    assert get_effective_x_post_limit(SimpleNamespace(platform_data=None)) == 280
+    assert (
+        get_effective_x_post_limit(SimpleNamespace(platform_data={"other": 1}))
+        == 280
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -537,7 +613,22 @@ async def test_obtain_valid_token_refresh_failure_maps_to_token_error(
 client = TestClient(app)
 
 
-def test_x_login_redirects_with_pkce():
+@pytest.fixture
+def x_settings(monkeypatch):
+    """Pin X OAuth settings so tests are independent of host env vars."""
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "X_CLIENT_ID", "test-x-client-id")
+    monkeypatch.setattr(settings, "X_CLIENT_SECRET", "test-x-client-secret")
+    monkeypatch.setattr(
+        settings,
+        "X_REDIRECT_URI",
+        "http://localhost:8000/api/v1/auth/x/callback",
+    )
+    return settings
+
+
+def test_x_login_redirects_with_pkce(x_settings):
     response = client.get("/api/v1/auth/x", follow_redirects=False)
 
     assert response.status_code == 307
@@ -570,7 +661,7 @@ def _jwt_for(user: User) -> str:
 
 
 @pytest.mark.asyncio
-async def test_x_callback_full_flow(monkeypatch):
+async def test_x_callback_full_flow(monkeypatch, x_settings):
     state = generate_oauth_state()
     verifier, challenge = generate_pkce_pair()
     user = User(id=uuid.uuid4(), email="a@b.c", name="A")
@@ -630,7 +721,7 @@ async def test_x_callback_full_flow(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_x_callback_upserts_existing_account(monkeypatch):
+async def test_x_callback_upserts_existing_account(monkeypatch, x_settings):
     state = generate_oauth_state()
     verifier, _ = generate_pkce_pair()
     user = User(id=uuid.uuid4(), email="a@b.c", name="A")
@@ -711,7 +802,7 @@ async def test_x_callback_rejects_missing_verifier():
 
 
 @pytest.mark.asyncio
-async def test_x_callback_requires_login(monkeypatch):
+async def test_x_callback_requires_login(monkeypatch, x_settings):
     state = generate_oauth_state()
     verifier, _ = generate_pkce_pair()
 
@@ -739,7 +830,7 @@ async def test_x_callback_requires_login(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_x_callback_token_exchange_failure(monkeypatch):
+async def test_x_callback_token_exchange_failure(monkeypatch, x_settings):
     state = generate_oauth_state()
     verifier, _ = generate_pkce_pair()
 
@@ -791,10 +882,17 @@ async def test_post_service_routes_x_to_x_publisher(monkeypatch):
     class FakeXPublisher:
         instances = []
 
-        def __init__(self, access_token, platform_user_id, username=None):
+        def __init__(
+            self,
+            access_token,
+            platform_user_id,
+            username=None,
+            max_post_length=280,
+        ):
             self.access_token = access_token
             self.platform_user_id = platform_user_id
             self.username = username
+            self.max_post_length = max_post_length
             FakeXPublisher.instances.append(self)
 
         async def publish(self, post):
@@ -809,7 +907,7 @@ async def test_post_service_routes_x_to_x_publisher(monkeypatch):
     monkeypatch.setattr(
         post_service_module,
         "obtain_valid_x_token",
-        lambda db, account: _fake_valid_token(account),
+        _fake_valid_token,
     )
 
     service = post_service_module.PostService(
@@ -828,7 +926,7 @@ async def test_post_service_routes_x_to_x_publisher(monkeypatch):
     assert published.external_url == "https://x.com/xuser/status/tweet-1"
 
 
-async def _fake_valid_token(account):
+async def _fake_valid_token(db, account):
     return token_encryptor.decrypt(account.access_token)
 
 
@@ -853,3 +951,136 @@ async def test_post_service_rejects_x_when_no_account():
     with pytest.raises(InvalidPostStateError) as exc:
         await PostService(db=db).publish_now(post.id, user_id)
     assert "No active x account" in str(exc.value)
+
+
+# ---------------------------------------------------------------------------
+# Adaptive post length limit
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_post_service_persists_detected_limit(monkeypatch):
+    from app.services import post_service as post_service_module
+
+    user_id = uuid.uuid4()
+    account = SocialAccount(
+        id=uuid.uuid4(),
+        user_id=user_id,
+        platform="x",
+        platform_user_id="user-42",
+        display_name="xuser",
+        access_token=token_encryptor.encrypt("tok"),
+        status="active",
+    )
+    post = Post(
+        id=uuid.uuid4(),
+        user_id=user_id,
+        platform="x",
+        hook="H",
+        caption="C",
+        cta="CTA",
+        hashtags=[],
+        status="approved",
+    )
+
+    class RejectingPublisher:
+        def __init__(self, **kwargs):
+            pass
+
+        async def publish(self, post):
+            raise XPublishError(
+                "X limits posts to 200 characters for this account.",
+                detected_limit=200,
+            )
+
+    monkeypatch.setattr(
+        post_service_module, "XPublisher", RejectingPublisher
+    )
+    monkeypatch.setattr(
+        post_service_module,
+        "obtain_valid_x_token",
+        _fake_valid_token,
+    )
+
+    service = post_service_module.PostService(
+        db=StubDB(account=account, post=post)
+    )
+
+    with pytest.raises(XPublishError):
+        await service.publish_now(post.id, user_id)
+
+    assert post.status == "failed"
+    assert account.platform_data == {"x_post_max_length": 200}
+
+
+@pytest.mark.asyncio
+async def test_post_service_uses_effective_limit(monkeypatch):
+    from app.services import post_service as post_service_module
+
+    user_id = uuid.uuid4()
+    account = SocialAccount(
+        id=uuid.uuid4(),
+        user_id=user_id,
+        platform="x",
+        platform_user_id="user-42",
+        display_name="xuser",
+        access_token=token_encryptor.encrypt("tok"),
+        status="active",
+        platform_data={"x_post_max_length": 200},
+    )
+    post = Post(
+        id=uuid.uuid4(),
+        user_id=user_id,
+        platform="x",
+        hook="H",
+        caption="C",
+        cta="CTA",
+        hashtags=[],
+        status="approved",
+    )
+
+    captured = {}
+
+    class RecordingPublisher:
+        async def publish(self, post):
+            return PublishResult("tweet-1")
+
+    monkeypatch.setattr(
+        post_service_module, "XPublisher", RecordingPublisher
+    )
+    monkeypatch.setattr(
+        post_service_module,
+        "obtain_valid_x_token",
+        _fake_valid_token,
+    )
+
+    service = post_service_module.PostService(
+        db=StubDB(account=account, post=post)
+    )
+
+    def recording_init(self, **kwargs):
+        captured.update(kwargs)
+
+    monkeypatch.setattr(
+        RecordingPublisher, "__init__", recording_init
+    )
+
+    await service.publish_now(post.id, user_id)
+
+    assert captured["max_post_length"] == 200
+
+
+def test_generation_prompt_includes_length_constraint():
+    from app.llm.prompts import build_generation_prompt
+    from app.schemas.content import ContentGenerationRequest
+
+    request = ContentGenerationRequest(
+        platform="x",
+        topic="AI agents",
+    )
+
+    prompt_with_limit = build_generation_prompt(request, post_max_length=200)
+    assert "Length constraint" in prompt_with_limit
+    assert "200 characters" in prompt_with_limit
+
+    prompt_without = build_generation_prompt(request)
+    assert "Length constraint" not in prompt_without

@@ -59,6 +59,11 @@ class Settings(BaseSettings):
     )
     X_API_BASE: str = "https://api.x.com"
     X_AUTHORIZE_URL: str = "https://x.com/i/oauth2/authorize"
+    # Default max post length. X enforces 280 for standard accounts and
+    # 25000 for Premium; some tiers/apps enforce a lower limit. When X
+    # rejects a post for length, the actual limit is detected from the
+    # API error, stored on the connected account, and used from then on.
+    X_POST_MAX_LENGTH: int = 280
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, String, Text, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -52,6 +52,13 @@ class SocialAccount(Base):
 
     token_expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
+        nullable=True,
+    )
+
+    # Per-account platform metadata (e.g. {"x_post_max_length": 200}).
+    # Never stores credentials.
+    platform_data: Mapped[dict | None] = mapped_column(
+        JSONB,
         nullable=True,
     )
 

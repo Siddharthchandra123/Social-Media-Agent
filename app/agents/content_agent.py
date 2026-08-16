@@ -34,10 +34,12 @@ class ContentAgent:
     async def generate(
         self,
         request: ContentGenerationRequest,
+        post_max_length: int | None = None,
     ) -> list[EvaluatedCandidate]:
 
         candidates = await self._generate_candidates(
-            request
+            request,
+            post_max_length=post_max_length,
         )
 
         evaluated = []
@@ -77,9 +79,13 @@ class ContentAgent:
     async def _generate_candidates(
         self,
         request: ContentGenerationRequest,
+        post_max_length: int | None = None,
     ) -> GeneratedCandidates:
 
-        prompt = build_generation_prompt(request)
+        prompt = build_generation_prompt(
+            request,
+            post_max_length=post_max_length,
+        )
 
         return await self.gemini.generate_structured(
             prompt=prompt,

@@ -7,6 +7,8 @@ from sqlalchemy.orm import selectinload
 from app.agents.content_agent import ContentAgent
 from app.db.models.candidate import ContentCandidate
 from app.db.models.generation import ContentGeneration
+from app.db.models.social_account import SocialAccount
+from app.publishing.x import get_effective_x_post_limit
 from app.schemas.content import ContentGenerationRequest
 
 
@@ -46,7 +48,15 @@ class ContentService:
 
         try:
             evaluated_candidates = (
-                await self.content_agent.generate(request)
+                await self.content_agent.generate(
+                    request,
+                    post_max_length=(
+                        await self._post_max_length_for(
+                            request.platform.value,
+                            user_id,
+                        )
+                    ),
+                )
             )
 
             candidate_models = []
@@ -158,6 +168,31 @@ class ContentService:
         )
 
         return generation
+
+    async def _post_max_length_for(
+        self,
+        platform: str,
+        user_id: uuid.UUID,
+    ) -> int | None:
+        """
+        Resolve the post length limit for the user's connected account.
+
+        Only X has a meaningful per-account post length constraint;
+        other platforms return None (no length instruction injected).
+        """
+        if platform != "x":
+            return None
+
+        result = await self.db.execute(
+            select(SocialAccount).where(
+                SocialAccount.user_id == user_id,
+                SocialAccount.platform == "x",
+                SocialAccount.status == "active",
+            )
+        )
+        account = result.scalars().first()
+
+        return get_effective_x_post_limit(account)
 
     async def list_generations(
         self,

@@ -11,7 +11,13 @@ from app.db.models.social_account import SocialAccount
 from app.publishing.facebook import FacebookPublisher
 from app.publishing.instagram import InstagramPublisher
 from app.publishing.linkedin import LinkedInPublisher
-from app.publishing.x import XPublisher, obtain_valid_x_token
+from app.publishing.x import (
+    XPublisher,
+    X_POST_MAX_LENGTH_KEY,
+    XPublishError,
+    get_effective_x_post_limit,
+    obtain_valid_x_token,
+)
 from app.security.encryption import token_encryptor
 
 
@@ -284,6 +290,9 @@ class PostService:
                 access_token=valid_token,
                 platform_user_id=social_account.platform_user_id,
                 username=social_account.display_name,
+                max_post_length=get_effective_x_post_limit(
+                    social_account
+                ),
             )
         else:
             raise InvalidPostStateError("Unsupported platform")
@@ -323,6 +332,20 @@ class PostService:
             import logging
 
             logging.exception("PUBLISHING FAILED")
+
+            # If X revealed the account's real post length limit
+            # (e.g. a tier-restricted account), remember it so future
+            # publishes and AI generations respect it.
+            if (
+                post.platform == "x"
+                and isinstance(exc, XPublishError)
+                and exc.detected_limit
+            ):
+                platform_data = dict(social_account.platform_data or {})
+                platform_data[X_POST_MAX_LENGTH_KEY] = (
+                    exc.detected_limit
+                )
+                social_account.platform_data = platform_data
 
             post.status = "failed"
             post.failure_reason = str(exc)
